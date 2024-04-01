@@ -28,7 +28,12 @@ void main() {
     return;
 }   
 
-/* initialize a database for each of the objects (device/pse/port)*/
+/**
+ * @brief initialize a database for each of the objects (device/pse/port)
+ *
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
 poe_op_result_t database_initialize() 
 {
     Dictionary *db_ptr = NULL;
@@ -40,26 +45,26 @@ poe_op_result_t database_initialize()
     
     device_db_ptr = create_dictionary(num_of_devices);
     for(index=0; index<num_of_devices; index++) {
-        poe_device_db_t device_db_entry;
-        key = device_db_entry.device_id = 0; /* get hw data */
-        db_entry_ptr = (void*)(&device_db_entry);
+        poe_device_db_t *device_db_entry_ptr = (poe_device_db_t*)malloc(sizeof(poe_device_db_t));
+        key = device_db_entry_ptr->device_id = 0; /* get hw data */
+        db_entry_ptr = (void*)(device_db_entry_ptr);
         db_ptr = device_db_ptr;
     }
 
     pse_db_ptr = create_dictionary(num_of_pses);
     for(index=0; index<num_of_pses; index++) {
-        poe_pse_db_t pse_db_entry;
-        key = pse_db_entry.pse_id = 0; /* get hw data */
-        db_entry_ptr = (void*)(&pse_db_entry);
+        poe_pse_db_t *pse_db_entry_ptr = (poe_pse_db_t*)malloc(sizeof(poe_pse_db_t));
+        key = pse_db_entry_ptr->pse_id = 0; /* get hw data */
+        db_entry_ptr = (void*)(pse_db_entry_ptr);
         db_ptr = pse_db_ptr;
     }
 
     port_db_ptr = create_dictionary(num_of_ports);
     for(index=0; index<num_of_ports; index++) {
-        poe_port_db_t port_db_entry;
-        key = port_db_entry.front_panel_index = 0; /* get hw data */
-        port_db_entry.port_standard = poe_port_hw_type_bt_type3_E; /* get hw data */
-        db_entry_ptr = (void*)(&port_db_entry);
+        poe_port_db_t *port_db_entry_ptr = (poe_port_db_t*)malloc(sizeof(poe_port_db_t));
+        key = port_db_entry_ptr->front_panel_index = 0; /* get hw data */
+        port_db_entry_ptr->port_standard = poe_port_hw_type_bt_type3_E; /* get hw data */
+        db_entry_ptr = (void*)(port_db_entry_ptr);
         db_ptr = port_db_ptr;
     }
 
@@ -74,11 +79,22 @@ poe_op_result_t database_initialize()
     return poe_op_ok_E;
 }
 
+/**
+ * @brief General initialize a for the shared memory protocol
+ *
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
 poe_op_result_t shared_memory_initialize() {
     return poe_op_ok_E;
 }
 
-/* initialize the poe device */
+/**
+ * @brief General initialize for all the PoE components
+ *
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
 poe_op_result_t internal_poe_device_initialize(void) {
     
     poe_op_result_t result = poe_op_ok_E;
@@ -120,7 +136,14 @@ poe_op_result_t internal_poe_device_initialize(void) {
     return poe_op_ok_E;
 }
 
-/* get the first front panel index */
+/**
+ * @brief Get the first front panel index
+ *
+ * @param[out] first_front_panel_index first front panel index
+ * 
+ * @return #true if operation is successful otherwise false
+ *
+ */
 bool poe_port_get_first_index(uint32_t *first_front_panel_index) {
     KeyValuePair key_value;
     if(!dict_get_first(port_db_ptr, &key_value)) {
@@ -131,7 +154,14 @@ bool poe_port_get_first_index(uint32_t *first_front_panel_index) {
     return true;
 }
 
-/* get the next front panel index */
+/**
+ * @brief Get the next front panel index
+ *
+ * @param[out] front_panel_index next front panel index
+ * 
+ * @return #true if operation is successful otherwise false
+ *
+ */
 bool poe_port_get_next_index(uint32_t *front_panel_index) {
     KeyValuePair next_key_value;
     
@@ -143,7 +173,14 @@ bool poe_port_get_next_index(uint32_t *front_panel_index) {
     return true;
 }
 
-/* get the poe port hardware type */
+/**
+ * @brief Get the poe port hardware type
+ *
+ * @param[in] front_panel_index front panel index
+ * 
+ * @return #poe_port_hw_type_t if operation is successful otherwise poe_port_hw_type_invalid_E
+ *
+ */
 poe_port_hw_type_t poe_get_port_poe_hw_type(uint32_t front_panel_index) { 
     poe_port_db_t *value_ptr = (poe_port_db_t*)dict_get(port_db_ptr, (uint64_t)front_panel_index);
 
@@ -154,39 +191,80 @@ poe_port_hw_type_t poe_get_port_poe_hw_type(uint32_t front_panel_index) {
     return value_ptr->port_standard;
 }
 
-/* get the physical port index */
-uint8_t poe_port_get_physical_index(uint8_t front_panel_index) {
+/**
+ * @brief Get the physical port index
+ *
+ * @param[in] front_panel_index front panel index
+ * @param[out] physical_index physical port index
+ * 
+ * @return #true if operation is successful otherwise false
+ *
+ */
+bool poe_port_get_physical_index(uint32_t front_panel_index, uint32_t *physical_index) {
     poe_port_db_t *value_ptr = (poe_port_db_t*)dict_get(port_db_ptr, (uint64_t)front_panel_index);
 
     if(value_ptr == NULL) {
-        return 0;
+        return false;
     }
 
-    return value_ptr->physical_index_a;
+    *physical_index = value_ptr->physical_index_a;
+
+    return true;
 }
 
-/* get the second physical port index (if it exists) */
-uint8_t poe_port_get_second_physical_index(uint8_t front_panel_index) {
+/**
+ * @brief Get the second physical port index (if it exists)
+ *
+ * @param[in] front_panel_index front panel index
+ * @param[out] physical_index second physical port index
+ * 
+ * @return #true if operation is successful otherwise false
+ *
+ */
+bool poe_port_get_second_physical_index(uint32_t front_panel_index, uint32_t *physical_index) {
     poe_port_db_t *value_ptr = (poe_port_db_t*)dict_get(port_db_ptr, (uint64_t)front_panel_index);
 
     if(value_ptr == NULL) {
-        return 0;
+        return false;
     }
 
-    return value_ptr->physical_index_b;
+    *physical_index = value_ptr->physical_index_b;
+
+    return true;
 }
 
-
+/**
+ * @brief Send/recieve data from the shared memory protocol
+ *
+ * @param[in] send true if writing data otherwise reading
+ * @param[in] op_code operation code
+ * @param[in] data_len data length
+ * @param[out] data data
+ * 
+ * @return #true if operation is successful otherwise false
+ *
+ */
 bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_len, uint8_t *data) {
     /* should be implemented in the IPC/shared memory logic */
     return true;
 }
 
-/* send/receive message to/from the poe firmware */
+/**
+ * @brief send/receive message to/from the poe firmware
+ *
+ * @param[in] msg_level message level (port/system)
+ * @param[in] direction get or set
+ * @param[in] msg_id message id
+ * @param[in] data_len data length
+ * @param[out] data_PTR data
+ * 
+ * @return #true if operation is successful otherwise false
+ *
+ */
 poe_op_result_t poe_v3_send_receive_msg (
 
     /*!     INPUTS:             */    
-    poe_v3_msg_level_TYP        msg_type,
+    poe_v3_msg_level_TYP        msg_level,
     poe_v3_msg_direction_TYP    direction,
     uint16_t                                 msg_id,
     uint8_t                                  data_len,
@@ -201,11 +279,10 @@ poe_op_result_t poe_v3_send_receive_msg (
     uint8_t  *buf_PTR;
     bool send=(direction==poe_v3_msg_dir_get_CNS)?false:true;
     poe_v3_msg_opCode_UNT op_code;
-    uint32_t                                     time_stamp = 0, time_stamp2 = 0;
 /*!****************************************************************************/
 /*!                      F U N C T I O N   L O G I C                          */
 /*!****************************************************************************/   
-    poe_v3_set_msg_opCode_MAC(op_code, msg_type, direction, msg_id);
+    poe_v3_set_msg_opCode_MAC(op_code, msg_level, direction, msg_id);
     buf_PTR = (uint8_t*)data_PTR;
     if (true != EXTHWG_POE_IPc_send_recieve_msg(send, op_code.op_code_num_32, data_len, buf_PTR)) {
         return poe_op_failed_E;
@@ -213,9 +290,13 @@ poe_op_result_t poe_v3_send_receive_msg (
 
     return poe_op_ok_E;
 } 
-/* END OF poe_v3_send_receive_msg */ 
 
-/* intialize port matrix */
+/**
+ * @brief Intialize port matrix
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
 poe_op_result_t poe_port_matrix_initialize() {
     uint32_t                          physical_number_a, physical_number_b, front_panel_index, index;;
     poe_port_hw_type_t               poe_port_hw_type;
@@ -233,7 +314,13 @@ poe_op_result_t poe_port_matrix_initialize() {
 
         poe_port_hw_type = poe_get_port_poe_hw_type(front_panel_index);
 
-        physical_number_a = poe_port_get_physical_index(front_panel_index);
+        if(poe_port_hw_type == poe_port_hw_type_invalid_E) {
+            return poe_op_failed_E;
+        }
+
+         if(!poe_port_get_physical_index(front_panel_index, &physical_number_a)) {
+            return poe_op_failed_E;
+         }
 
         set_matrix_params.physic_logical_pair[index].logical_port = (uint8_t)front_panel_index;
         set_matrix_params.physic_logical_pair[index++].phys_port = (uint8_t)physical_number_a;
@@ -242,7 +329,10 @@ poe_op_result_t poe_port_matrix_initialize() {
         if ((poe_port_hw_type == poe_port_hw_type_60W_E) ||
             (poe_port_hw_type == poe_port_hw_type_bt_type3_E) ||
             (poe_port_hw_type == poe_port_hw_type_bt_type4_E)) {
-            physical_number_b = poe_port_get_second_physical_index(front_panel_index);
+            
+            if(!poe_port_get_second_physical_index(front_panel_index, &physical_number_b)) {
+                return poe_op_failed_E;
+            }
 
             set_matrix_params.physic_logical_pair[index].logical_port = (uint8_t)front_panel_index;
             set_matrix_params.physic_logical_pair[index++].phys_port = (uint8_t)physical_number_b;
@@ -250,15 +340,23 @@ poe_op_result_t poe_port_matrix_initialize() {
     }
     
     if (index) {
-        poe_v3_send_receive_msg_MAC(
-            set_matrix_params, 
+        return poe_v3_send_receive_msg(
             poe_v3_msg_level_system_CNS, 
             poe_v3_msg_dir_set_CNS,
-            poe_v3_sys_msg_portMatrix_CNS);
+            poe_v3_sys_msg_portMatrix_CNS,
+            sizeof(set_matrix_params),
+            (uint8_t*)&set_matrix_params);
     } 
+
+    return poe_op_failed_E;
 }
 
-/* intialize port standard */
+/**
+ * @brief intialize port standard
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
 poe_op_result_t poe_port_standard_initialize() {
     uint32_t                          front_panel_index, index;
     poe_port_hw_type_t      poe_port_hw_type, system_hw_capability;
@@ -279,21 +377,30 @@ poe_op_result_t poe_port_standard_initialize() {
         port_standard_params.supported_std_data[index++].portSupportedStd = poe_port_hw_type;
     }
 
-    poe_v3_send_receive_msg_MAC(port_standard_params, poe_v3_msg_level_system_CNS, poe_v3_msg_dir_set_CNS, poe_v3_sys_msg_portSupportStandard_CNS);
+    return poe_v3_send_receive_msg(
+            poe_v3_msg_level_system_CNS, 
+            poe_v3_msg_dir_set_CNS,
+            poe_v3_sys_msg_portSupportStandard_CNS,
+            sizeof(port_standard_params),
+            (uint8_t*)&port_standard_params);
 }
 
-/* enable/disable poe port */
+/**
+ * @brief Set enable/disable on poe port
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[in] enable enable/disable
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
 poe_op_result_t poe_port_set_admin_enable (
-
-    /*!     INPUTS:             */
     uint32_t front_panel_index,
     bool enable
-    /*!     INPUTS / OUTPUTS:   */
-    
-    /*!     OUTPUTS:            */
 )
 {
     poe_v3_msg_portEnable_STC   port_params;
+    poe_op_result_t result; 
 
     rwlock_excl_acquire(&lock); 
 
@@ -301,42 +408,54 @@ poe_op_result_t poe_port_set_admin_enable (
     port_params.logic_port_num = (uint8_t)front_panel_index;
     port_params.port_admin_enable_disable = (enable==true)?poe_v3_port_admin_enable_CNS:poe_v3_port_admin_disable_CNS;
 
-    poe_v3_send_receive_msg_MAC(port_params, poe_v3_msg_level_port_CNS, poe_v3_msg_dir_set_CNS, poe_v3_port_msg_portEnable_CNS);
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_set_CNS, poe_v3_port_msg_portEnable_CNS, sizeof(port_params), (uint8_t*)&port_params);
 
     rwlock_excl_release(&lock);
 
-    return poe_op_ok_E;
+    return result;
 } 
-/* END OF poe_v3_msg_port_enable */ 
 
-/* get poe port enable/disable state */
-bool poe_port_get_admin_enable (
-
-    /*!     INPUTS:             */
+/**
+ * @brief get poe port enable/disable state
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[out] enable enable/disable
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_get_admin_enable (
     uint32_t front_panel_index,
-    /*!     INPUTS / OUTPUTS:   */
-    /*!     OUTPUTS:            */
     bool *enable
 )
 {
     poe_v3_msg_portEnable_STC   port_params;
+    poe_op_result_t result;
 
     rwlock_excl_acquire(&lock);  
 
     memset(&port_params, 0, sizeof(poe_v3_msg_portEnable_STC));
     port_params.logic_port_num = (uint8_t)front_panel_index;
 
-    poe_v3_send_receive_msg_MAC(port_params, poe_v3_msg_level_port_CNS, poe_v3_msg_dir_get_CNS, poe_v3_port_msg_portEnable_CNS);
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_get_CNS, poe_v3_port_msg_portEnable_CNS, sizeof(port_params), (uint8_t*)&port_params);
 
-    *enable = port_params.port_admin_enable_disable;
+    if(result == poe_op_ok_E) {
+        *enable = port_params.port_admin_enable_disable;
+    }
 
     rwlock_excl_release(&lock);
 
-    return poe_op_ok_E;
+    return result;
 }
 
+/**
+ * @brief swap uint16_t
+ * 
+ * @param[in] value uint16_t value
+ * 
+ * @return swapped uint16_t value
+ * 
+ */
 uint16_t swap16(uint16_t value) {
     return (value << 8) | (value >> 8);
 }
-
-/* END OF poe_v3_msg_get_port_enable */ 

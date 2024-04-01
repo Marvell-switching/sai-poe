@@ -30,6 +30,17 @@ global_poe *g_sai_db_ptr = NULL;
 rwlock_excl_t lock;
 Dictionary *poe_object_device_mapping_ptr = NULL, *poe_object_pse_mapping_ptr = NULL, *poe_object_port_mapping_ptr = NULL;
 
+/**
+ * @brief create sai object and bind it to poe object
+ *
+ * @param[in] type object type
+ * @param[out] object_id sai object
+ * @param[in] attr_count Count
+ * @param[in] attr_list Attribute list values
+ *
+ * @return #SAI_STATUS_SUCCESS if operation is successful otherwise a different
+ *    error code is returned.
+ */
 sai_status_t create_object(sai_object_type_t type,
                                  sai_object_id_t  *object_id,
                                  uint32_t attr_count,
@@ -64,20 +75,25 @@ sai_status_t create_object(sai_object_type_t type,
     poe_object_id->id = mapping_entry;
     poe_object_id->object_type = type;
 
-    if(!dict_put(mapping_ptr, *object_id, (void*)(&mapping_entry))) {
+    if((mapping_ptr) && (!dict_put(mapping_ptr, *object_id, (void*)(&mapping_entry)))) {
         return SAI_STATUS_FAILURE;
     }
 
     return SAI_STATUS_SUCCESS;
 }
 
+/**
+ * @brief remove object mapping
+ *
+ * @param[in] type object type
+ * @param[in] object_id sai object
+ *
+ * @return #SAI_STATUS_SUCCESS if operation is successful otherwise a different
+ *    error code is returned.
+ */
 sai_status_t remove_object(sai_object_type_t type,
                            sai_object_id_t  object_id)
 {
-    if (NULL == object_id) {
-        return SAI_STATUS_INVALID_PARAMETER;
-    }
-
     Dictionary *mapping_ptr = NULL;
 
     switch (type)
@@ -93,7 +109,7 @@ sai_status_t remove_object(sai_object_type_t type,
             break;
     }
 
-    if(!dict_remove(mapping_ptr, object_id)) {
+    if((mapping_ptr) && (!dict_remove(mapping_ptr, object_id))) {
         return SAI_STATUS_FAILURE;
     }
 
@@ -118,12 +134,22 @@ sai_status_t find_attrib_in_list(uint32_t attr_count,
     return SAI_STATUS_SUCCESS;
 }
 
+/**
+ * @brief checks if device is initialized
+ *
+ * @return #bool, if initialized true otherwise false
+ */
 bool poe_device_is_initialized()
 {
     return g_sai_db_ptr->is_poe_device_initialized;
 }
 
-/* PoE initialization. */
+/**
+ * @brief PoE initialization
+ *
+ * @return #SAI_STATUS_SUCCESS if operation is successful otherwise a different
+ *    error code is returned.
+ */
 sai_status_t poe_device_initialize()
 {
     sai_status_t status = SAI_STATUS_SUCCESS;;
@@ -357,7 +383,7 @@ static sai_status_t remove_poe_pse(_In_ sai_object_id_t poe_pse_id)
     assert(NULL != g_sai_db_ptr);
     rwlock_excl_acquire(&lock); 
 
-    remove_object(SAI_OBJECT_TYPE_POE_PSE poe_pse_id);
+    remove_object(SAI_OBJECT_TYPE_POE_PSE, poe_pse_id);
 
     rwlock_excl_release(&lock);
 
@@ -422,7 +448,7 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
     }
     
     /* poe result to sai result */
-    return SAI_STATUS_SUCCESS;;
+    return result;
 }
 
 /**
@@ -484,7 +510,7 @@ static sai_status_t remove_poe_port(_In_ sai_object_id_t poe_port_id)
     
     rwlock_excl_acquire(&lock); 
 
-    remove_object(SAI_OBJECT_TYPE_POE_PSE poe_port_id);
+    remove_object(SAI_OBJECT_TYPE_POE_PSE, poe_port_id);
 
     rwlock_excl_release(&lock);
 

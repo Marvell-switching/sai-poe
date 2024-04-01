@@ -29,9 +29,9 @@ typedef struct poe_object_id_t {
 
 /* status */
 typedef enum {
-    poe_op_ok_E = 0,
+    poe_op_failed_E = 0,
+    poe_op_ok_E,
     poe_op_not_supported_E,
-    poe_op_failed_E,
 } poe_op_result_t;
 
 typedef enum {
@@ -45,15 +45,6 @@ typedef enum {
     /* must be last */
     poe_port_hw_type_MAX_E
 } poe_port_hw_type_t;
-
-typedef enum {
-    poe_port_oper_on_E,
-    poe_port_oper_on_nonCompliant_E,
-    poe_port_oper_fault_E,
-    poe_port_oper_off_E,
-    poe_port_oper_admin_disabled_E,
-    poe_port_oper_last_E
-} poe_port_status_ENT;
 
 typedef struct _poe_power_management_unit_db_STCT {
     /* set */
@@ -140,20 +131,20 @@ typedef struct {
     poe_bt_power_classifications_STC     poe_bt_class;
 }poe_power_classifications_STC;
 
-typedef uint8_t poe_v3_port_activeChannel_TYP;
-#define poe_v3_port_activeChannel_chA_CNS   1
-#define poe_v3_port_activeChannel_chB_CNS   2
-#define poe_v3_port_activeChannel_chAB_CNS  3
+typedef uint8_t poe_v3_port_active_channel_TYP;
+#define poe_v3_port_active_channel_A_CNS   1
+#define poe_v3_port_active_channel_B_CNS   2
+#define poe_v3_port_active_channel_AB_CNS  3
 
 typedef struct {
-    poe_v3_port_activeChannel_TYP            active_channel;
-    uint32_t                                 rlPethPsePortOutputVoltage;
-    uint32_t                                 rlPethPsePortOutputCurrent;
-    uint32_t                                 rlPethPsePortOutputPower;
+    poe_v3_port_active_channel_TYP           active_channel;
+    uint32_t                                 output_voltage;
+    uint32_t                                 output_current;
+    uint32_t                                 output_power;
 } poe_output_data_STC;
 
 typedef uint8_t poe_detection_status_TYP;
-#define poe_detection_status_disabled_CNS                        1
+#define poe_detection_status_off_CNS                             1
 #define poe_detection_status_searching_CNS                       2
 #define poe_detection_status_deliveringPower_CNS                 3
 #define poe_detection_status_fault_CNS                           4
@@ -205,17 +196,16 @@ typedef enum {
     poe_PsePortPowerPriority_low_E =       3
 } poe_PsePortPowerPriority_ENT;
 
-typedef uint32_t port_management_mode;
-#define MIB_rlPethPsePortMenagementMode_notRelevant_CNS     0
-#define MIB_rlPethPsePortMenagementMode_dynamic_CNS         1
-#define MIB_rlPethPsePortMenagementMode_static_CNS          2
+typedef uint8_t poe_v3_power_mng_mode_TYP;
+#define poe_v3_power_mng_mode_dynamic_CNS     0
+#define poe_v3_power_mng_mode_static_CNS      1
 
 typedef struct {
     bool                                         pethPsePortAdminEnable;         
     poe_PsePortPowerPriority_ENT        pethPsePortPowerPriority;       
     uint32_t                                         pethPsePortPowerLimit;          
     bool              legacy_support_status;          
-    port_management_mode             power_mng_status;               
+    poe_v3_power_mng_mode_TYP             power_mng_status;               
     poe_v3_btClass_TYP                 poePortClassLimit;
     bool        num_of_events;        
 } poe_port_configurable_data_t;
@@ -242,7 +232,7 @@ typedef struct poe_port_db_t {
     /* set params - user configurable data*/
     poe_port_configurable_data_t configurable_data;
     /* read only params */
-    poe_port_status_ENT status;
+    poe_detection_status_TYP status;
     uint32_t max_power_limit;
     bool oper_status;                                                                               
 } poe_port_db_t;
@@ -322,8 +312,6 @@ typedef uint8_t poe_v3_msg_level_TYP;
 typedef uint8_t poe_v3_msg_direction_TYP;
 #define poe_v3_msg_dir_get_CNS          0
 #define poe_v3_msg_dir_set_CNS          1
-
-#define poe_op_result_t bool
 
 typedef struct {
     poe_v3_msg_level_TYP        level;
@@ -557,10 +545,6 @@ typedef uint8_t poe_v3_port_priority_TYP;
 #define poe_v3_port_priority_high_CNS       1
 #define poe_v3_port_priority_critical_CNS   2
 
-typedef uint8_t poe_v3_powerMngMode_TYP;
-#define poe_v3_powerMngMode_dynamic_CNS     0
-#define poe_v3_powerMngMode_static_CNS      1
-
 typedef uint8_t poe_v3_classLimit_TYP;
 #define poe_v3_classLimit_unlimited_CNS     0
 #define poe_v3_classLimit_class3_CNS        3
@@ -569,10 +553,10 @@ typedef uint8_t poe_v3_classLimit_TYP;
 #define poe_v3_classLimit_class6_CNS        6
 #define poe_v3_classLimit_class7_CNS        7
 
-typedef uint8_t poe_v3_port_powerAllocBy_TYP;
-#define poe_v3_port_powerAllocBy_hw_CNS     0
-#define poe_v3_port_powerAllocBy_lldp_CNS   1
-#define poe_v3_port_powerAllocBy_cdp_CNS    2
+typedef uint8_t poe_v3_port_power_alloc_by_TYP;
+#define poe_v3_port_power_alloc_by_hw_CNS     0
+#define poe_v3_port_power_alloc_by_lldp_CNS   1
+#define poe_v3_port_power_alloc_by_cdp_CNS    2
 
 #define poe_v3_port_status_max_status_CNS poe_v3_port_status_off_unreachable_CNS /* must be updated whenever a new status added above */
 
@@ -625,7 +609,7 @@ typedef struct {
 
 typedef struct {
     uint8_t                              logic_port_num;
-    poe_v3_powerMngMode_TYP mng_mode;
+    poe_v3_power_mng_mode_TYP mng_mode;
     uint8_t                              reserved[2];
 } poe_v3_msg_portPowerMngMode_STC;
 
@@ -650,7 +634,7 @@ typedef struct {
 
 typedef struct {
     uint8_t                                      logic_port_num;
-    poe_v3_port_powerAllocBy_TYP     allocBy;
+    poe_v3_port_power_alloc_by_TYP     allocBy;
     uint8_t                                      reserved[2];
     uint32_t                                     powerAlloc_mw_swap;
     uint32_t                                     powerSupplied_mw_swap;
@@ -674,7 +658,7 @@ typedef struct {
 
 typedef struct {
     uint8_t                                      logic_port_num;
-    poe_v3_port_activeChannel_TYP    active_channel;
+    poe_v3_port_active_channel_TYP    active_channel;
     uint8_t                                      reserved[2];
     uint32_t                                     voltage_in_volts_swap;
     uint32_t                                     current_in_ma_swap;
@@ -722,7 +706,7 @@ typedef struct {
 
 typedef struct {
     uint8_t                                      logic_port_num;
-    poe_v3_port_activeChannel_TYP   active_channel;
+    poe_v3_port_active_channel_TYP   active_channel;
     uint8_t                                      reserved[2];
     uint32_t                                     volt_v_swap;
     uint32_t                                     current_ma_swap;
@@ -808,12 +792,8 @@ typedef struct
     _opcode.params.direction = _dir;                                        \
     _opcode.params.msg_id_swap = swap16(_id);
 
-#define poe_v3_send_receive_msg_MAC(_data, _level, _dir, _id)                                                  \
-    if (poe_v3_send_receive_msg(_level, _dir, _id, sizeof(_data), (uint8_t*)&_data) != poe_op_ok_E) \
-        return poe_op_failed_E;
-
 #define poe_convert_hw_to_detection_status_MAC(_port_status, _detection_status)   \
-    _detection_status = poe_detection_status_disabled_CNS;                \
+    _detection_status = poe_detection_status_off_CNS;                \
     switch (_port_status) {                                                             \
         case poe_v3_port_status_off_inDetection_CNS:                  \
         case poe_v3_port_status_off_CapDetInvSig_CNS:               \                   \
@@ -826,7 +806,7 @@ typedef struct
             _detection_status = poe_detection_status_deliveringPower_CNS; \
             break;                                                                      \
         case poe_v3_port_status_off_UserDisable_CNS:                      \
-            _detection_status = poe_detection_status_disabled_CNS;        \
+            _detection_status = poe_detection_status_off_CNS;        \
             break;                                                                      \                                                                    \                                                                     \
         default:                                                                        \
             _detection_status = poe_detection_status_fault_CNS;      \
@@ -838,13 +818,14 @@ poe_op_result_t internal_poe_device_initialize(void);
 bool poe_port_get_first_index(uint32_t *front_panel_index);
 bool poe_port_get_next_index(uint32_t *front_panel_index);
 poe_port_hw_type_t poe_get_port_poe_hw_type(uint32_t front_panel_index);
-uint8_t poe_port_get_physical_index(uint8_t front_panel_index);
+bool poe_port_get_physical_index(uint32_t front_panel_index, uint32_t *physical_index);
+bool poe_port_get_second_physical_index(uint32_t front_panel_index, uint32_t *physical_index);
 bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_len, uint8_t *data);
 poe_op_result_t poe_v3_send_receive_msg(poe_v3_msg_level_TYP msg_type, poe_v3_msg_direction_TYP direction, uint16_t msg_id, uint8_t data_len, void *data_PTR);
 poe_op_result_t poe_port_matrix_initialize();
 poe_op_result_t poe_port_standard_initialize();
 poe_op_result_t poe_port_set_admin_enable(uint32_t front_panel_index, bool enable);
-bool poe_port_get_admin_enable(uint32_t front_panel_index, bool *enable);
+poe_op_result_t poe_port_get_admin_enable(uint32_t front_panel_index, bool *enable);
 uint16_t swap16(uint16_t value);
 
 typedef struct {

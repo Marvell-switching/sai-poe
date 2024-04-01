@@ -38,16 +38,9 @@ module SAI-Platform-Yang-Module {
 		leaf POE-feature-is-supported {
 			if-feature POE-feature;
 			type boolean;
-			default false;
+			default true;
 			//config false;
 			description "The feature can be configured only if POE is supported.";
-		}
-		leaf POE-PD-is-supported {
-			if-feature POE-PD-feature;
-			type boolean;
-			default false;
-			//config false;
-			description "The feature can be configured only if POE PD is supported.";
 		}
 	
 // 
@@ -63,23 +56,6 @@ module SAI-Platform-Yang-Module {
 		typedef bank-watts-type {
 			type uint16;
 			description "Specifies the Power Bank size in Watts.";
-		}
-		typedef bank-source-type {
-			type enumeration {
-				enum PS {
-					description "Specifies the Power source as the main Power Supply.";
-					value 1;
-				}
-				enum RPS {
-					description "Specifies the Power source as the Redundant Power Supply.";
-					value 2;
-				}
-				enum PDports {
-					description "Specifies the Power source as the PoE Powered Device ports.";
-					value 3;
-				}
-			}
-			description "Specifies the Power Bank Power source.";
 		}
 		typedef PSEindex-type {
 			type uint8 {
@@ -115,47 +91,6 @@ module SAI-Platform-Yang-Module {
 				}
 			}
 			description "Specifies the PSE Port Type";
-		}
-		typedef PSE-type {
-			type enumeration {
-				enum undefined {
-					description "Specifies the PSE is not defined, legacy Yang.";
-					value 1;
-				}
-				enum 690xx {
-					description "Specifies the PSE Microsemi 69008.";
-					value 2;
-				}
-				enum 691xx {
-					description "Specifies the PSE Microsemi 69100.";
-					value 3;
-				}
-				enum 692xx {
-					description "Specifies the PSE Microsemi 69200.";
-					value 4;
-				}
-				enum 2388xx {
-					description "Specifies the PSE TI tps 23880-AT.";
-					value 5;
-				}
-				enum 692bt {
-					description "Specifies the PSE Microsemi 692x0-BT.";
-					value 6;
-				}
-				enum ADI-AT {
-					description "Specifies the PSE ADI BT  LTC4270/4271.";
-					value 7;
-				}
-				enum ADI-BT {
-					description "Specifies the PSE ADI BT LTC4291/LTC4292.";
-					value 8;
-				}
-				enum TI-BT {
-					description "Specifies the PSE TI tps 23882-BT.";
-					value 9;
-				}
-			}
-			description "Specifies the PSE Type";
 		}
 		typedef PSE-number-type {
 			type uint8 {
@@ -214,31 +149,6 @@ module SAI-Platform-Yang-Module {
                 }
             }
             description "Specifies the mapping method type.";
-        }
-        typedef poe-powered-pd-ports-type {
-            type enumeration {
-                enum pd-not-supported {
-                    description "pd is not supported.";
-                    value 0;
-                }
-                enum pd-support {
-                    description "pd support.";
-                    value 1;
-                }
-                enum pd-plus-support {
-                    description "pd plus support.";
-                    value 2;
-                }
-                enum pd-60W-support {
-                    description "pd 60W support.";
-                    value 3;
-                }
-                enum pd-bt-support {
-                    description "pd bt support.";
-                    value 4;
-                }
-            }
-            description "Specifies the poe powered pd ports type.";
         }
         typedef poe-mcu-type {
             type enumeration {
@@ -334,17 +244,6 @@ module SAI-Platform-Yang-Module {
 			}
 			description "Specifies Power Status.";
 		}
-		
-		typedef panel-group-number-type {
-			type uint8 {
-				range "1..4";
-			}
-			description "Specifies the front panel group number, this is a logical number used to enumerate the different front panel groups.";
-		}
-		typedef panel-port-number-type {
-			type uint8;
-			description "Specifies the front panel port number within a specific front panel group.";
-		}
 
 // Section POE
 		container PoE {
@@ -352,11 +251,9 @@ module SAI-Platform-Yang-Module {
 			presence "Enable POE";
 			description "POE feature is supported";	
 			container POE-power-banks {
-				when "/SAI-Platform/POE-feature-is-supported = 'true'"; 
 				description "Specifies the power banks configuration.";
 				list PoEbank-list {
 					description "Specifies a list of PoE Banks.";
-					when "/SAI-Platform/POE-feature-is-supported = 'true'";
 					key "bank-number";
 					ordered-by system;
 					min-elements 1;
@@ -370,61 +267,10 @@ module SAI-Platform-Yang-Module {
 						mandatory true;
 						description "Specifies the Watts provided by the Bank.";
 					}
-					leaf bank-source {
-						type  bank-source-type;
-						description "Specifies the power source of this Bank.";
-						mandatory true;
-					}
 				}
 			}
-			leaf PSEports-are-supported {
-				type boolean;
-				default false;
-				description "Specifies if PSE ports are supported.";
-			}
-			container PSEports {
-				when "/SAI-Platform/PoE/PSEports-are-supported = 'true'"; 
-				description "Specifies the PSE ports configuration.";
-				
-				leaf PSE-information {
-					description "PSE type";
-					type PSE-type;
-					default undefined;
-				}
-				
-				list PSEport-list {
-					key "panel-group-number panel-port-number";
-					ordered-by user;
-					min-elements 1;
-					description "Specifies one PSE Port configuration.";
-					leaf panel-group-number {
-						type panel-group-number-type;
-						description "Specifies the panel group number.";
-					}
-					leaf panel-port-number {
-						type panel-port-number-type;
-						description "Specifies the panel port number.";
-					}
-					container pse-group {
-						description "Specifies the PSE configuration.";
-						leaf port-type {
-							type PSEport-type;
-							mandatory true;
-							description "Specifies the PSE Port Type.";
-						}
-						leaf index1 {
-							type PSEindex-type;
-							mandatory true;
-							description "Specifies the PSE Port Index 1.";
-						}
-						leaf index2 {
-							when "../port-type = '60W' or ../port-type = 'BT-type3' or ../port-type = 'BT-type4'";
-							type PSEindex-type;
-							description "Specifies the PSE Port Index 2. This index is used only when port-type = '60W' or 'BT' (type 3 or 4).";
-						}
-					}
-				}
-
+			container PSElist {
+				description "Specifies the PSE configuration.";
 				list PSE-list {
 					key "PSE-number";
 					unique "PSE-address";
@@ -440,24 +286,51 @@ module SAI-Platform-Yang-Module {
 					}					
 				}
 			}
+			container PSEports {
+				description "Specifies the PSE ports configuration.";
+				
+				list PSEport-list {
+					key "front-panel-port-index";
+					leaf front-panel-port-index {
+						type PSEindex-type;
+						mandatory true;
+						description "Specifies the front panel index.";
+					}
+					leaf port-type {
+						type PSEport-type;
+						mandatory true;
+						description "Specifies the PSE Port Type.";
+					}
+					leaf index1 {
+						type PSEindex-type;
+						mandatory true;
+						description "Specifies the PSE Port Index 1.";
+					}
+					leaf index2 {
+						when "../port-type = '60W' or ../port-type = 'BT-type3' or ../port-type = 'BT-type4'";
+						type PSEindex-type;
+						description "Specifies the PSE Port Index 2. This index is used only when port-type = '60W' or 'BT' (type 3 or 4).";
+					}
+				}
+			}
 			leaf poe-hw-type-value {
 				type poe-hardware-type;
-				default poe-plus-support;
+				default poe-bt-type3-support;
 				description "Specifies which PoE hardware type of device family is supported or not supported.";
 			}
 			leaf mcu-type {
 				type poe-mcu-type;
-				default mcu;
+				default mc3;
 				description "Specifies the PoE mcu type.";
 			}
 			leaf poe-communication-type-value {
 				type poe-communication-type;
-				default communication-type-I2C;
+				default communication-type-memory;
 				description "Indicates whether PoE communication type is serial, I2C or memory.";
 			}
 			leaf host-serial-channel-id {
 				type poe-host-serial-channel-id;
-				default dragonite-shared-memory;
+				default ipc-shared-memory;
 				description "Specifies the host serial channel id.";
 			}
 			leaf fw-file-name {
