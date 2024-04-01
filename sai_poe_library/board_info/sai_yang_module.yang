@@ -1,0 +1,482 @@
+module SAI-Platform-Yang-Module {
+	yang-version "1.1";
+	namespace "urn:marvell:sai:hw:platform:yang";
+	prefix "saiplt";
+	organization
+		"Marvell Technology Group Ltd.";
+	contact
+		"WG Web: <https:// ???/>
+		WG List: <???>
+		WG Chair: ???
+	mailto:???";
+	description
+		"This YANG module defines the essential components for the management
+		of a routing subsystem. Platform Model supported by Marvell SAI.
+		Copyright (c)2024.	All rights reserved.";
+
+	revision 2024-03-31 {
+		description "1.01, PoE support added.";
+		reference "???";
+	}
+	
+	revision 2024-03-31 {
+		description "1.00, Initial revision.";
+		reference "???";
+	}
+	
+// features 
+	feature POE-feature {
+		description "Power Over Ethernet is supported";
+	}
+
+// root
+	container SAI-Platform {
+		description "SAI Platform Yang, this describes the hardware and access for SAI boards.";
+// 
+// Section Features Definitions
+
+		leaf POE-feature-is-supported {
+			if-feature POE-feature;
+			type boolean;
+			default false;
+			//config false;
+			description "The feature can be configured only if POE is supported.";
+		}
+		leaf POE-PD-is-supported {
+			if-feature POE-PD-feature;
+			type boolean;
+			default false;
+			//config false;
+			description "The feature can be configured only if POE PD is supported.";
+		}
+	
+// 
+// Section Type Definitions
+// 
+// POE 	
+		typedef bank-number-type {
+			type uint8 {
+				range "0..15";
+			}
+			description "Specifies the Power Bank Number.";
+		}
+		typedef bank-watts-type {
+			type uint16;
+			description "Specifies the Power Bank size in Watts.";
+		}
+		typedef bank-source-type {
+			type enumeration {
+				enum PS {
+					description "Specifies the Power source as the main Power Supply.";
+					value 1;
+				}
+				enum RPS {
+					description "Specifies the Power source as the Redundant Power Supply.";
+					value 2;
+				}
+				enum PDports {
+					description "Specifies the Power source as the PoE Powered Device ports.";
+					value 3;
+				}
+			}
+			description "Specifies the Power Bank Power source.";
+		}
+		typedef PSEindex-type {
+			type uint8 {
+				range "0..127";
+			}
+			description "Specifies the PSE index.";
+		}
+		typedef PSEport-type {
+			type enumeration {
+				enum AF {
+					description "Specifies the PSE Port type is AF (PoE).";
+					value 1;
+				}
+				enum AT {
+					description "Specifies the PSE Port type as AT (PoE Plus).";
+					value 2;
+				}
+				enum 60W {
+					description "Specifies the PSE Port type as 60W (UPoE).";
+					value 3;
+				}
+				enum BT-type2 {
+					description "Specifies the PSE Port type as BT - Type 2 (up to 30W).";
+					value 4;
+				}
+				enum BT-type3 {
+					description "Specifies the PSE Port type as BT - Type 3 (up to 60W).";
+					value 5;
+				}
+				enum BT-type4 {
+					description "Specifies the PSE Port type as BT - Type 4 (up to 90W).";
+					value 6;
+				}
+			}
+			description "Specifies the PSE Port Type";
+		}
+		typedef PSE-type {
+			type enumeration {
+				enum undefined {
+					description "Specifies the PSE is not defined, legacy Yang.";
+					value 1;
+				}
+				enum 690xx {
+					description "Specifies the PSE Microsemi 69008.";
+					value 2;
+				}
+				enum 691xx {
+					description "Specifies the PSE Microsemi 69100.";
+					value 3;
+				}
+				enum 692xx {
+					description "Specifies the PSE Microsemi 69200.";
+					value 4;
+				}
+				enum 2388xx {
+					description "Specifies the PSE TI tps 23880-AT.";
+					value 5;
+				}
+				enum 692bt {
+					description "Specifies the PSE Microsemi 692x0-BT.";
+					value 6;
+				}
+				enum ADI-AT {
+					description "Specifies the PSE ADI BT  LTC4270/4271.";
+					value 7;
+				}
+				enum ADI-BT {
+					description "Specifies the PSE ADI BT LTC4291/LTC4292.";
+					value 8;
+				}
+				enum TI-BT {
+					description "Specifies the PSE TI tps 23882-BT.";
+					value 9;
+				}
+			}
+			description "Specifies the PSE Type";
+		}
+		typedef PSE-number-type {
+			type uint8 {
+				range "0..127";
+			}
+			description "Specifies the PSE number.";
+		}
+		typedef PSE-address-type {
+			type uint8 {
+				range "0..127";
+			}
+			description "Specifies the PSE index.";
+		}
+		typedef poe-hardware-type {
+            type enumeration {
+                enum poe-not-supported {
+                    description "poe not supported.";
+                    value 0;
+                }
+                enum poe-support {
+                    description "poe hardware type.";
+                    value 1;
+                }
+                enum poe-plus-support {
+                    description "poe plus support.";
+                    value 2;
+                }
+                enum poe-60W-support {
+                    description "poe 60W support.";
+                    value 3;
+                }
+                enum poe-bt-type2-support {
+                    description "poe bt type 2 support.";
+                    value 4;
+                }
+                enum poe-bt-type3-support {
+                    description "poe bt type 3 support.";
+                    value 5;
+                }
+                enum poe-bt-type4-support {
+                    description "poe bt type 4 support.";
+                    value 6;
+                }
+            }
+            description "Specifies the emergency support mode.";
+        }
+        typedef poe-mapping-method-type {
+            type enumeration {
+                enum port-hw-type {
+                    description "port hardware type";
+                    value 0;
+                }
+                enum standard-af {
+                    description "standard af";
+                    value 1;
+                }
+            }
+            description "Specifies the mapping method type.";
+        }
+        typedef poe-powered-pd-ports-type {
+            type enumeration {
+                enum pd-not-supported {
+                    description "pd is not supported.";
+                    value 0;
+                }
+                enum pd-support {
+                    description "pd support.";
+                    value 1;
+                }
+                enum pd-plus-support {
+                    description "pd plus support.";
+                    value 2;
+                }
+                enum pd-60W-support {
+                    description "pd 60W support.";
+                    value 3;
+                }
+                enum pd-bt-support {
+                    description "pd bt support.";
+                    value 4;
+                }
+            }
+            description "Specifies the poe powered pd ports type.";
+        }
+        typedef poe-mcu-type {
+            type enumeration {
+                enum dragonite {
+                    description "dragonite";
+                    value 0;
+                }
+                enum cm3 {
+                    description "cm3";
+                    value 1;
+                }
+            }
+            description "Specifies the poe mcu type.";
+        }
+		typedef poe-vendor-type {
+            type enumeration {
+                enum none {
+                    description "none";
+                    value 0;
+                }
+                enum microchip {
+                    description "microchip";
+                    value 1;
+                }
+				enum ti {
+                    description "ti";
+                    value 2;
+                }
+				enum adi {
+                    description "adi";
+                    value 3;
+                }
+            }
+            description "Specifies the poe vendor.";
+        }
+        typedef poe-communication-type {
+            type enumeration {
+                enum communication-type-serial {
+                    description "serial.";
+                    value 0;
+                }
+                enum communication-type-I2C {
+                    description "I2C.";
+                    value 1;
+                }
+                enum communication-type-memory {
+                    description "memory.";
+                    value 2;
+                }
+            }
+            description "Specifies the poe communication type";
+        }
+        typedef poe-host-serial-channel-id {
+            type enumeration {
+                enum uart {
+                    description "uart";
+                    value 0;
+                }
+                enum i2c {
+                    description "i2c";
+                    value 1;
+                }
+                enum dragonite-shared-memory {
+                    description "dragonite shared memory";
+                    value 2;
+                }
+                enum ipc-shared-memory {
+                    description "ipc shared memory";
+                    value 3;
+                }
+            }
+            description "Specifies the poe mcu type.";
+        }
+// POWER
+		typedef power-status-type {
+			type enumeration {
+				enum standBy {
+					description "Specifies Power status is Standby.";
+					value 1;
+				}
+				enum notAvailable {
+					description "Specifies Power status is notAvailable.";
+					value 2;
+				}
+				enum backUp {
+					description "Specifies Power status is BackUp Power.";
+					value 3;
+				}
+				enum ready {
+					description "Specifies Power status is Ready.";
+					value 4;
+				}
+			}
+			description "Specifies Power Status.";
+		}
+		
+		typedef panel-group-number-type {
+			type uint8 {
+				range "1..4";
+			}
+			description "Specifies the front panel group number, this is a logical number used to enumerate the different front panel groups.";
+		}
+		typedef panel-port-number-type {
+			type uint8;
+			description "Specifies the front panel port number within a specific front panel group.";
+		}
+
+// Section POE
+		container PoE {
+			when "/SAI-Platform/POE-feature-is-supported = 'true'"; 
+			presence "Enable POE";
+			description "POE feature is supported";	
+			container POE-power-banks {
+				when "/SAI-Platform/POE-feature-is-supported = 'true'"; 
+				description "Specifies the power banks configuration.";
+				list PoEbank-list {
+					description "Specifies a list of PoE Banks.";
+					when "/SAI-Platform/POE-feature-is-supported = 'true'";
+					key "bank-number";
+					ordered-by system;
+					min-elements 1;
+					max-elements 17;
+					leaf bank-number {
+						type bank-number-type;
+						description "Specifies the Bank Number.";
+					}
+					leaf bank-watts {
+						type bank-watts-type;
+						mandatory true;
+						description "Specifies the Watts provided by the Bank.";
+					}
+					leaf bank-source {
+						type  bank-source-type;
+						description "Specifies the power source of this Bank.";
+						mandatory true;
+					}
+				}
+			}
+			leaf PSEports-are-supported {
+				type boolean;
+				default false;
+				description "Specifies if PSE ports are supported.";
+			}
+			container PSEports {
+				when "/SAI-Platform/PoE/PSEports-are-supported = 'true'"; 
+				description "Specifies the PSE ports configuration.";
+				
+				leaf PSE-information {
+					description "PSE type";
+					type PSE-type;
+					default undefined;
+				}
+				
+				list PSEport-list {
+					key "panel-group-number panel-port-number";
+					ordered-by user;
+					min-elements 1;
+					description "Specifies one PSE Port configuration.";
+					leaf panel-group-number {
+						type panel-group-number-type;
+						description "Specifies the panel group number.";
+					}
+					leaf panel-port-number {
+						type panel-port-number-type;
+						description "Specifies the panel port number.";
+					}
+					container pse-group {
+						description "Specifies the PSE configuration.";
+						leaf port-type {
+							type PSEport-type;
+							mandatory true;
+							description "Specifies the PSE Port Type.";
+						}
+						leaf index1 {
+							type PSEindex-type;
+							mandatory true;
+							description "Specifies the PSE Port Index 1.";
+						}
+						leaf index2 {
+							when "../port-type = '60W' or ../port-type = 'BT-type3' or ../port-type = 'BT-type4'";
+							type PSEindex-type;
+							description "Specifies the PSE Port Index 2. This index is used only when port-type = '60W' or 'BT' (type 3 or 4).";
+						}
+					}
+				}
+
+				list PSE-list {
+					key "PSE-number";
+					unique "PSE-address";
+					leaf PSE-number {
+						type PSE-number-type;
+						mandatory true;
+						description "Specifies the PSE number.";
+					}
+					leaf PSE-address {
+						type PSE-address-type;
+						mandatory true;
+						description "Specifies the PSE address.";
+					}					
+				}
+			}
+			leaf poe-hw-type-value {
+				type poe-hardware-type;
+				default poe-plus-support;
+				description "Specifies which PoE hardware type of device family is supported or not supported.";
+			}
+			leaf mcu-type {
+				type poe-mcu-type;
+				default mcu;
+				description "Specifies the PoE mcu type.";
+			}
+			leaf poe-communication-type-value {
+				type poe-communication-type;
+				default communication-type-I2C;
+				description "Indicates whether PoE communication type is serial, I2C or memory.";
+			}
+			leaf host-serial-channel-id {
+				type poe-host-serial-channel-id;
+				default dragonite-shared-memory;
+				description "Specifies the host serial channel id.";
+			}
+			leaf fw-file-name {
+				type string;
+				default "";
+				description "Indicates fw file name.";
+			}
+			leaf pse-fw-file-name {
+				type string;
+				default "";
+				description "Indicates pse fw file name.";
+			}
+			leaf poe-vendor {
+				type poe-vendor-type;
+				default none;
+				description "Specifies the PoE vendor.";
+			}
+		}
+		
+// End of file tags
+	}
+}	
