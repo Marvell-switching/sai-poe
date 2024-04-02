@@ -51,31 +51,33 @@ sai_status_t create_object(sai_object_type_t type,
     }
 
     poe_object_id_t *poe_object_id = (poe_object_id_t*)object_id;
-    Dictionary *mapping_ptr = NULL;
-    uint32_t mapping_entry;
+    Dictionary *mapping_db_ptr = NULL;
+    uint32_t *mapping_entry_ptr = (uint32_t*)malloc(sizeof(uint32_t));
 
     switch (type)
     {
         case SAI_OBJECT_TYPE_POE_DEVICE:
-            mapping_entry = 0;
-            mapping_ptr = poe_object_device_mapping_ptr;
+            *mapping_entry_ptr = 0;
+            mapping_db_ptr = poe_object_device_mapping_ptr;
             break;
         case SAI_OBJECT_TYPE_POE_PSE:
-            mapping_entry = attr_list[0].value.u32;
-            mapping_ptr = poe_object_pse_mapping_ptr;
+            *mapping_entry_ptr = attr_list[0].value.u32;
+            mapping_db_ptr = poe_object_pse_mapping_ptr;
             break;
         case SAI_OBJECT_TYPE_POE_PORT:
-            mapping_entry = attr_list[0].value.u32;
-            mapping_ptr = poe_object_port_mapping_ptr;
+            *mapping_entry_ptr = attr_list[0].value.u32;
+            mapping_db_ptr = poe_object_port_mapping_ptr;
             break;
+        default:
+            return SAI_STATUS_FAILURE;
     }
 
     /* create object */
     memset(poe_object_id, 0, sizeof(*poe_object_id));
-    poe_object_id->id = mapping_entry;
+    poe_object_id->id = *mapping_entry_ptr;
     poe_object_id->object_type = type;
 
-    if((mapping_ptr) && (!dict_put(mapping_ptr, *object_id, (void*)(&mapping_entry)))) {
+    if((!mapping_db_ptr) || (!dict_put(mapping_db_ptr, *object_id, (void*)(mapping_entry_ptr)))) {
         return SAI_STATUS_FAILURE;
     }
 
@@ -94,22 +96,24 @@ sai_status_t create_object(sai_object_type_t type,
 sai_status_t remove_object(sai_object_type_t type,
                            sai_object_id_t  object_id)
 {
-    Dictionary *mapping_ptr = NULL;
+    Dictionary *mapping_db_ptr = NULL;
 
     switch (type)
     {
         case SAI_OBJECT_TYPE_POE_DEVICE:
-            mapping_ptr = poe_object_device_mapping_ptr;
+            mapping_db_ptr = poe_object_device_mapping_ptr;
             break;
         case SAI_OBJECT_TYPE_POE_PSE:
-            mapping_ptr = poe_object_pse_mapping_ptr;
+            mapping_db_ptr = poe_object_pse_mapping_ptr;
             break;
         case SAI_OBJECT_TYPE_POE_PORT:
-            mapping_ptr = poe_object_port_mapping_ptr;
+            mapping_db_ptr = poe_object_port_mapping_ptr;
             break;
+        default:
+            return SAI_STATUS_FAILURE;
     }
 
-    if((mapping_ptr) && (!dict_remove(mapping_ptr, object_id))) {
+    if((!mapping_db_ptr) || (!dict_remove(mapping_db_ptr, object_id))) {
         return SAI_STATUS_FAILURE;
     }
 

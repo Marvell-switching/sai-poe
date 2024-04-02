@@ -35,15 +35,13 @@ typedef enum {
 } poe_op_result_t;
 
 typedef enum {
-    poe_port_hw_type_invalid_E = 0,
-    poe_port_hw_type_af_E,
+    poe_port_hw_type_af_E = 0,
     poe_port_hw_type_at_E,
     poe_port_hw_type_60W_E,
-    poe_port_hw_type_bt_type2_E, /* BT up to 30W */
     poe_port_hw_type_bt_type3_E,
     poe_port_hw_type_bt_type4_E,
     /* must be last */
-    poe_port_hw_type_MAX_E
+    poe_port_hw_type_invalid_E
 } poe_port_hw_type_t;
 
 typedef struct _poe_power_management_unit_db_STCT {

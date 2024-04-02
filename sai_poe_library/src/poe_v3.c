@@ -36,8 +36,6 @@ void main() {
  */
 poe_op_result_t database_initialize() 
 {
-    Dictionary *db_ptr = NULL;
-    void *db_entry_ptr = NULL;
     uint64_t key;
     uint32_t num_of_ports, num_of_pses, num_of_devices, index;
 
@@ -46,32 +44,53 @@ poe_op_result_t database_initialize()
     device_db_ptr = create_dictionary(num_of_devices);
     for(index=0; index<num_of_devices; index++) {
         poe_device_db_t *device_db_entry_ptr = (poe_device_db_t*)malloc(sizeof(poe_device_db_t));
+        
+        if(!device_db_entry_ptr) {
+            rwlock_excl_release(&lock);
+            return poe_op_failed_E;
+        }
+
         key = device_db_entry_ptr->device_id = 0; /* get hw data */
-        db_entry_ptr = (void*)(device_db_entry_ptr);
-        db_ptr = device_db_ptr;
+
+        if((!device_db_ptr) || (!dict_put(device_db_ptr, key, (void*)(device_db_entry_ptr)))) {
+            rwlock_excl_release(&lock);
+            return poe_op_failed_E;
+        }
     }
 
     pse_db_ptr = create_dictionary(num_of_pses);
     for(index=0; index<num_of_pses; index++) {
         poe_pse_db_t *pse_db_entry_ptr = (poe_pse_db_t*)malloc(sizeof(poe_pse_db_t));
+
+        if(!pse_db_entry_ptr) {
+            rwlock_excl_release(&lock);
+            return poe_op_failed_E; 
+        }
+
         key = pse_db_entry_ptr->pse_id = 0; /* get hw data */
-        db_entry_ptr = (void*)(pse_db_entry_ptr);
-        db_ptr = pse_db_ptr;
+
+        if((!pse_db_ptr) || (!dict_put(pse_db_ptr, key, (void*)(pse_db_entry_ptr)))) {
+            rwlock_excl_release(&lock);
+            return poe_op_failed_E;
+        }
     }
 
     port_db_ptr = create_dictionary(num_of_ports);
     for(index=0; index<num_of_ports; index++) {
         poe_port_db_t *port_db_entry_ptr = (poe_port_db_t*)malloc(sizeof(poe_port_db_t));
+
+        if(!port_db_entry_ptr) {
+            rwlock_excl_release(&lock);
+            return poe_op_failed_E;
+        }
+
         key = port_db_entry_ptr->front_panel_index = 0; /* get hw data */
         port_db_entry_ptr->port_standard = poe_port_hw_type_bt_type3_E; /* get hw data */
-        db_entry_ptr = (void*)(port_db_entry_ptr);
-        db_ptr = port_db_ptr;
-    }
 
-    /* if the put fails, return failure */
-    if(!dict_put(db_ptr, key, (void*)(&db_entry_ptr))) {
-        rwlock_excl_release(&lock);
-        return poe_op_failed_E;
+        if((!port_db_ptr) || (!dict_put(port_db_ptr, key, (void*)(port_db_entry_ptr)))) {
+            rwlock_excl_release(&lock);
+            return poe_op_failed_E;
+        }
     }
 
     rwlock_excl_release(&lock);
