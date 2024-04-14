@@ -1,0 +1,39 @@
+# New Makefile for Ros Over linux WM
+#
+SHELL := /bin/bash
+
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURR_DIR := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
+ROOT_DIR := $(CURR_DIR)
+
+TARGET_HOST=WIN32_WM
+
+BUILD_DIR_NAME := build_dir_wm
+
+ifneq ($(strip $(BUILD_DIR_TARGET)),)
+BUILD_DIR_NAME := $(BUILD_DIR_NAME)/$(BUILD_DIR_TARGET)
+endif
+
+BUILD_DIR := $(BUILD_DIR_NAME)
+OUT_DIR := $(BUILD_DIR)
+OBJ_OUT_DIR := $(BUILD_DIR)/obj
+
+
+export FAST_COMPILATION_FLAG := -j$(shell awk '/^processor/{n+=1}END{print n}' /proc/cpuinfo)
+
+OBJ_EXTENSION=obj
+DEP_EXTENSION=dep
+LIB_EXTENSION=lib
+
+PDLIB_LIB := $(OUT_DIR)/libpdlib.$(LIB_EXTENSION)
+
+ifneq ($(strip $(WM_COMPILER)),)
+export WM_COMPILER
+$(info "WM_COMPILER is : $(WM_COMPILER)")
+else
+export WM_COMPILER=MSVSC
+$(info "Setting WM_COMPILER to $(WM_COMPILER)")
+endif
+
+include $(WM_COMPILER).mk
+print-%  : ; @echo $* = $($*)

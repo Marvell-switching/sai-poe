@@ -1,4 +1,4 @@
-module SAI-Platform-Yang-Module {
+module sai_poe_yang_module {
 	yang-version "1.1";
 	namespace "urn:marvell:sai:hw:platform:yang";
 	prefix "saiplt";
@@ -14,7 +14,7 @@ module SAI-Platform-Yang-Module {
 		of a routing subsystem. Platform Model supported by Marvell SAI.
 		Copyright (c)2024.	All rights reserved.";
 
-	revision 2024-03-31 {
+	revision 2024-04-01 {
 		description "1.01, PoE support added.";
 		reference "???";
 	}
@@ -137,19 +137,6 @@ module SAI-Platform-Yang-Module {
             }
             description "Specifies the emergency support mode.";
         }
-        typedef poe-mapping-method-type {
-            type enumeration {
-                enum port-hw-type {
-                    description "port hardware type";
-                    value 0;
-                }
-                enum standard-af {
-                    description "standard af";
-                    value 1;
-                }
-            }
-            description "Specifies the mapping method type.";
-        }
         typedef poe-mcu-type {
             type enumeration {
                 enum dragonite {
@@ -222,28 +209,6 @@ module SAI-Platform-Yang-Module {
             }
             description "Specifies the poe mcu type.";
         }
-// POWER
-		typedef power-status-type {
-			type enumeration {
-				enum standBy {
-					description "Specifies Power status is Standby.";
-					value 1;
-				}
-				enum notAvailable {
-					description "Specifies Power status is notAvailable.";
-					value 2;
-				}
-				enum backUp {
-					description "Specifies Power status is BackUp Power.";
-					value 3;
-				}
-				enum ready {
-					description "Specifies Power status is Ready.";
-					value 4;
-				}
-			}
-			description "Specifies Power Status.";
-		}
 
 // Section POE
 		container PoE {
@@ -320,7 +285,7 @@ module SAI-Platform-Yang-Module {
 			}
 			leaf mcu-type {
 				type poe-mcu-type;
-				default mc3;
+				default cm3;
 				description "Specifies the PoE mcu type.";
 			}
 			leaf poe-communication-type-value {
