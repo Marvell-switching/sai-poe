@@ -1,4 +1,4 @@
-#include "inc/dictionary.h"
+#include <h/utils/dictionary.h>
 
 Dictionary* create_dictionary(size_t initial_size) {
     Dictionary* dict = (Dictionary*)malloc(sizeof(Dictionary));
@@ -89,6 +89,9 @@ bool dict_remove(Dictionary* dict, uint64_t key) {
     }
     for (size_t i = 0; i < dict->size; ++i) {
         if (dict->entries[i].key == key) {
+            // Free memory associated with the value
+            free(dict->entries[i].value);
+            
             // Remove the key-value pair by shifting elements
             for (size_t j = i; j < dict->size - 1; ++j) {
                 dict->entries[j] = dict->entries[j + 1];

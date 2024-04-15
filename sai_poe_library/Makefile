@@ -2,7 +2,7 @@
 CC := gcc
 
 # Compiler flags
-CFLAGS := -g -I.
+CFLAGS := -g -I. -I./PDLIB -I./h -I./PDLIB/h/
 
 # Linker flags
 LDFLAGS := -pthread

@@ -1,4 +1,4 @@
-#include "inc/lock.h"
+#include <h/utils/lock.h>
 
 void rwlock_excl_acquire(rwlock_excl_t *lock) {
     pthread_rwlock_wrlock(&lock->rwlock);

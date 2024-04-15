@@ -24,9 +24,9 @@
  *!**************************************************************************
  *!*/
 #include <stdarg.h>
-#include "../../../h/pdlib/init/pdlInit.h"
-#include "../../../h/pdlib/lib/pdlLib.h"
-#include "../../../h/pdlib/lib/private/prvPdlLib.h"
+#include <pdlib/init/pdlInit.h>
+#include <pdlib/lib/pdlLib.h>
+#include <pdlib/lib/private/prvPdlLib.h>
 
 #define PRV_PDL_MD5_WORDS_IN_DIGEST_CNS     PDL_LIB_MD5_DIGEST_LENGTH_CNS
 #define PRV_PDL_MD5_MSG_BLOCK_LEN_CNS       64

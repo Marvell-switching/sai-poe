@@ -6,11 +6,11 @@
  * @brief   Xmlparserappintf class
  */
 
-#include "../../../h/pdlib/common/pdlTypes.h"
-#include "../../../h/pdlib/lib/private/prvPdlLib.h"
-#include "../../../h/pdlib/xml/private/prvXmlParserBuilder.h"
-#include "../../../h/pdlib/xml/private/prvXmlParserData.h"
-#include "../../../h/pdlib/xml/xmlParser.h"
+#include <pdlib/common/pdlTypes.h>
+#include <pdlib/lib/private/prvPdlLib.h>
+#include <pdlib/xml/private/prvXmlParserBuilder.h>
+#include <pdlib/xml/private/prvXmlParserData.h>
+#include <pdlib/xml/xmlParser.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

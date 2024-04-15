@@ -15,11 +15,11 @@
  *
  */
 
-#include "../utils/inc/dictionary.h"
-#include "../utils/inc/lock.h"
-#include "../src/inc/poe_v3.h"
+#include <h/utils/dictionary.h>
+#include <h/utils/lock.h>
+#include <h/poe_v3.h>
 #include <string.h>
-#include "inc/sai.h"
+#include <h/sai/sai.h>
 #include "assert.h"
 
 #undef  __MODULE__
@@ -72,11 +72,12 @@ sai_status_t create_object(sai_object_type_t type,
             return SAI_STATUS_FAILURE;
     }
 
-    /* create object */
+    /* create object, use the given id and object type to create a unique sai object id */
     memset(poe_object_id, 0, sizeof(*poe_object_id));
     poe_object_id->id = *mapping_entry_ptr;
     poe_object_id->object_type = type;
 
+    /* update the dictionary with the new key value pair */
     if((!mapping_db_ptr) || (!dict_put(mapping_db_ptr, *object_id, (void*)(mapping_entry_ptr)))) {
         return SAI_STATUS_FAILURE;
     }
@@ -160,14 +161,32 @@ sai_status_t poe_device_initialize()
 
     if (poe_device_is_initialized()) {
         status = SAI_STATUS_SUCCESS;
-        goto out;
+        goto exit;
     }
 
     g_sai_db_ptr->is_poe_device_initialized = true;
 
-    status = (sai_status_t)internal_poe_device_initialize();
+    /* create the dictionaries */
+    /* placeholder - max number of entries for now */
+    poe_object_device_mapping_ptr = create_dictionary(1);
+    if(!poe_object_device_mapping_ptr) {
+        status = SAI_STATUS_FAILURE;
+        goto exit;
+    }
 
-out:
+    poe_object_pse_mapping_ptr = create_dictionary(16);
+    if(!poe_object_pse_mapping_ptr) {
+        status = SAI_STATUS_FAILURE;
+        goto exit;
+    }
+
+    poe_object_port_mapping_ptr = create_dictionary(48);
+    if(!poe_object_port_mapping_ptr) {
+        status = SAI_STATUS_FAILURE;
+        goto exit;
+    }
+
+exit:
     return status;
 }
 

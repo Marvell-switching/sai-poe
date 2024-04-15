@@ -28,8 +28,8 @@
 ********************************************************************************
 */
 
-#include "../../common/pdlTypes.h"
-#include "../../lib/private/prvPdlLib.h"
+#include <pdlib/common/pdlTypes.h>
+#include <pdlib/lib/private/prvPdlLib.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -41,9 +41,9 @@ extern "C" {
  * @{XML related functions
 */
 
-#include "../../common/pdlTypes.h"
-#include "../../xml/xmlParser.h"
-#include "../../xml/private/prvXmlParserData.h"
+#include <pdlib/common/pdlTypes.h>
+#include <pdlib/xml/private/prvXmlParserData.h>
+#include <pdlib/xml/xmlParser.h>
 
 #ifndef _WIN32
 #include <strings.h> /*needed for strcasecmp*/

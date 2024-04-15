@@ -8,9 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../../h/pdlib/lib/private/prvPdlLib.h"
-#include "../../../../h/pdlib/xml/private/prvXmlParser.h"
-#include "../../../../h/pdlib/xml/private/prvXmlParserBuilder.h"
+
+#include <pdlib/lib/private/prvPdlLib.h>
+#include <pdlib/xml/private/prvXmlParser.h>
+#include <pdlib/xml/private/prvXmlParserBuilder.h>
 
 #define XML_PARSER_DEBUG_LOG(x) /*prvPdlibOsPrintf x*/
 

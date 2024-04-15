@@ -28,14 +28,12 @@
 ********************************************************************************
 */
 
-#include "../../common/pdlTypes.h"
-#include "../../xml/xmlParser.h"
+#include <pdlib/common/pdlTypes.h>
+#include <pdlib/xml/xmlParser.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-extern BOOLEAN prvPdlAutoParserDebugFlag;
 
 /**
  * @defgroup Library Library

@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "pdlLibPrefix.h"
+#include <pdlib/common/pdlLibPrefix.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

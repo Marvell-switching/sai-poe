@@ -23,7 +23,7 @@
  *$              EXTERNAL DECLARATIONS (IMPORT)
  *!**************************************************************************
  *!*/
-#include "../../../h/pdlib/lib/private/prvPdlLibLinkedList.h"
+#include <pdlib/lib/private/prvPdlLibLinkedList.h>
 
 /* *************************************************************************
  *$              LOCAL VARIABLE DEFINITIONS

@@ -15,15 +15,15 @@
  *
  */
 
-#include "inc/poe_v3.h"
-#include "../utils/inc/dictionary.h"
-#include "../utils/inc/lock.h"
-#include "../PDLIB/h/pdlib/lib/private/prvPdlLib.h"
-#include "../PDLIB/parser/pdlParser.h"
-#include "../PDLIB/h/pdlib/init/pdlInit.h"
-#include "../PDLIB/h/pdlib/lib/pdlLib.h"
+#include <h/poe_v3.h>
+#include <h/utils/dictionary.h>
+#include <h/utils/lock.h>
+#include <PDLIB/h/pdlib/lib/private/prvPdlLib.h>
+#include <PDLIB/parser/pdlParser.h>
+#include <PDLIB/h/pdlib/init/pdlInit.h>
+#include <PDLIB/h/pdlib/lib/pdlLib.h>
 
-static PDL_FEATURE_DATA_STC        *feature_data_db_PTR;
+static PDL_FEATURE_DATA_STC        *board_info_db_PTR;
 static XML_PARSER_ROOT_DESCRIPTOR_TYP   xml_root_id;
 
 /* global databases */
@@ -40,11 +40,7 @@ static void xpSaiPdlibDebugCallback(const char *func_name_PTR,
 
     snprintf(log, sizeof(len), "pdlib debug: [%s]", func_name_PTR);
     len = strlen(log);
-    //va_start(argptr, format);
     vsnprintf(&log[len], sizeof(log) - len, format, argptr);
-    //va_end(argptr);
-
-    //XP_SAI_LOG_INFO(log);
 }
 
 static  BOOLEAN xpSaiPdlibXmlUncompressCallback(
@@ -136,6 +132,87 @@ static  BOOLEAN xpSaiPdlibgetXmlSignatureCallback(
     return TRUE;
 }
 
+bool board_info_db_get_first (
+    /*!     INPUTS:             */
+    PRV_PDLIB_DB_TYP  dbHandler,
+    /*!     INPUTS / OUTPUTS:   */
+    /*!     OUTPUTS:            */
+    void                    **outEntryPtrPtr
+)
+{
+/*!****************************************************************************/
+/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
+/*!****************************************************************************/
+    PDL_STATUS status;
+/*!****************************************************************************/
+/*!                      F U N C T I O N   L O G I C                          */
+/*!****************************************************************************/
+
+    status = prvPdlibDbGetFirst (dbHandler, outEntryPtrPtr);
+
+    if (status == PDL_NOT_FOUND)
+    {
+        return FALSE;
+    }
+    else if (status != PDL_OK)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+bool  board_info_db_get_next (
+    /*!     INPUTS:             */
+    PRV_PDLIB_DB_TYP  dbHandler,
+    void                    *keyPtr,
+    /*!     INPUTS / OUTPUTS:   */
+    /*!     OUTPUTS:            */
+    void                    **outEntryPtrPtr
+)
+{
+/*!****************************************************************************/
+/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
+/*!****************************************************************************/
+    PDL_STATUS status;
+/*!****************************************************************************/
+/*!                      F U N C T I O N   L O G I C                          */
+/*!****************************************************************************/
+    status = prvPdlibDbGetNext((PRV_PDLIB_DB_TYP)dbHandler, keyPtr, outEntryPtrPtr);
+
+    if(status == PDL_OK) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+bool board_info_db_num_of_entries_get (
+    /*!     INPUTS:             */
+    PRV_PDLIB_DB_TYP  dbHandler,
+    /*!     INPUTS / OUTPUTS:   */
+    /*!     OUTPUTS:            */
+    UINT_32                *numOfEntriesPtr
+)
+{
+/*!****************************************************************************/
+/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
+/*!****************************************************************************/
+    PDL_STATUS status;
+/*!****************************************************************************/
+/*!                      F U N C T I O N   L O G I C                          */
+/*!****************************************************************************/
+
+    status = prvPdlibDbGetNumOfEntries(dbHandler, numOfEntriesPtr);
+
+    if (status != PDL_OK)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 /**
  * @brief initialize a database for each of the objects (device/pse/port)
  *
@@ -145,66 +222,98 @@ static  BOOLEAN xpSaiPdlibgetXmlSignatureCallback(
 poe_op_result_t database_initialize() 
 {
     uint64_t key;
-    uint32_t num_of_ports = 2, num_of_pses = 2, num_of_devices = 1, index;
+    uint32_t num_of_devices = 1, num_of_pses, num_of_ports, index = 0;
     PDL_PSE_LIST_PARAMS_STC *pse_list_ptr = NULL;
     PDL_PSEPORT_LIST_PARAMS_STC *pse_port_list_ptr = NULL;
-
+    bool get_next = TRUE;
+    poe_op_result_t result = poe_op_ok_E;
 
     rwlock_excl_acquire(&lock);
     
+    /* create dictionary for the poe device */
     device_db_ptr = create_dictionary(num_of_devices);
+    if(!device_db_ptr) {
+        result = poe_op_failed_E;
+        goto exit;
+    }
     
-    for(index=0; index<num_of_devices; index++) {
-        poe_device_db_t *device_db_entry_ptr = (poe_device_db_t*)malloc(sizeof(poe_device_db_t));
-        
-        if(!device_db_entry_ptr) {
-            rwlock_excl_release(&lock);
-            return poe_op_failed_E;
-        }
+    /* set key value and update dictionary, there will be one poe device object */
+    poe_device_db_t *device_db_entry_ptr = (poe_device_db_t*)malloc(sizeof(poe_device_db_t));
+    
+    if(!device_db_entry_ptr) {
+        result = poe_op_failed_E;
+        goto exit;
+    }
 
-        key = device_db_entry_ptr->device_id = 0; /* get hw data */
+    key = device_db_entry_ptr->device_id = 0;
 
-        if((!device_db_ptr) || (!dict_put(device_db_ptr, key, (void*)(device_db_entry_ptr)))) {
-            rwlock_excl_release(&lock);
-            return poe_op_failed_E;
-        }
+    if(!dict_put(device_db_ptr, key, (void*)(device_db_entry_ptr))) {
+        result = poe_op_failed_E;
+        goto exit;
+    }
+
+    /* get the number of pse devices, and create the dictionary for the poe pse list */
+    if(!board_info_db_num_of_entries_get(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, &num_of_pses)) {
+        result = poe_op_failed_E;
+        goto exit;
     }
 
     pse_db_ptr = create_dictionary(num_of_pses);
-    prvPdlibDbGetFirst(feature_data_db_PTR->data_PTR->poe.pselist.pseList_PTR, (void **)&pse_list_ptr);
+    if(!pse_db_ptr) {
+        result = poe_op_failed_E;
+        goto exit;
+    }
 
-    for(index=0; index<num_of_pses; index++) {
+    /* get hw data */
+    get_next = board_info_db_get_first(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, (void **)&pse_list_ptr);
+
+    /* for each pse, set key value and update dictionary */
+    while(get_next) {
         poe_pse_db_t *pse_db_entry_ptr = (poe_pse_db_t*)malloc(sizeof(poe_pse_db_t));
 
         if(!pse_db_entry_ptr) {
-            rwlock_excl_release(&lock);
-            return poe_op_failed_E; 
+            result = poe_op_failed_E;
+            goto exit;
         }
         
-        key = pse_db_entry_ptr->pse_id = pse_list_ptr->list_keys.pseNumber; /* get hw data */
+        key = pse_db_entry_ptr->pse_id = pse_list_ptr->list_keys.pseNumber;
 
-        if((!pse_db_ptr) || (!dict_put(pse_db_ptr, key, (void*)(pse_db_entry_ptr)))) {
-            rwlock_excl_release(&lock);
-            return poe_op_failed_E;
+        if(!dict_put(pse_db_ptr, key, (void*)(pse_db_entry_ptr))) {
+            result = poe_op_failed_E;
+            goto exit;
         }
 
-        prvPdlibDbGetNext(feature_data_db_PTR->data_PTR->poe.pselist.pseList_PTR, (void *)&pse_list_ptr->list_keys, (void **)&pse_list_ptr);
+        /* get hw data */
+        get_next = board_info_db_get_next(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, (void *)&pse_list_ptr->list_keys, (void **)&pse_list_ptr);
+    }
+
+    /* get the number of poe ports, and create the dictionary for the poe port list */
+    if(!board_info_db_num_of_entries_get(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, &num_of_ports)) {
+        result = poe_op_failed_E;
+        goto exit;
     }
 
     port_db_ptr = create_dictionary(num_of_ports);
-    prvPdlibDbGetFirst(feature_data_db_PTR->data_PTR->poe.pseports.pseportList_PTR, (void **)&pse_port_list_ptr);
+    if(!port_db_ptr) {
+        result = poe_op_failed_E;
+        goto exit;
+    }
 
-    for(index=0; index<num_of_ports; index++) {
+    /* get hw data */
+    get_next = board_info_db_get_first(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, (void **)&pse_port_list_ptr);
+
+    /* for each port, set key value and update dictionary */
+    while(get_next) {
         poe_port_db_t *port_db_entry_ptr = (poe_port_db_t*)malloc(sizeof(poe_port_db_t));
 
         if(!port_db_entry_ptr) {
-            rwlock_excl_release(&lock);
-            return poe_op_failed_E;
+            result = poe_op_failed_E;
+            goto exit;
         }
 
-        key = port_db_entry_ptr->front_panel_index = pse_port_list_ptr->list_keys.frontPanelPortIndex; /* get hw data */
+        key = port_db_entry_ptr->front_panel_index = pse_port_list_ptr->list_keys.frontPanelPortIndex;
         switch (pse_port_list_ptr->portType) {
-            case PDL_PSEPORT_TYPE_AF_E:
+            case PDL_PSEPORT_TYPE_AT_E:
                 port_db_entry_ptr->port_standard = poe_port_hw_type_at_E;
                 break;
             case PDL_PSEPORT_TYPE_BT_TYPE3_E:
@@ -215,17 +324,19 @@ poe_op_result_t database_initialize()
         port_db_entry_ptr->physical_index_a = pse_port_list_ptr->index1;
         port_db_entry_ptr->physical_index_b = pse_port_list_ptr->index2;
 
-        if((!port_db_ptr) || (!dict_put(port_db_ptr, key, (void*)(port_db_entry_ptr)))) {
-            rwlock_excl_release(&lock);
-            return poe_op_failed_E;
+        if(!dict_put(port_db_ptr, key, (void*)(port_db_entry_ptr))) {
+            result = poe_op_failed_E;
+            goto exit;
         }
 
-        prvPdlibDbGetNext(feature_data_db_PTR->data_PTR->poe.pseports.pseportList_PTR, (void *)&pse_port_list_ptr->list_keys, (void **)&pse_port_list_ptr);
+        /* get hw data */
+        get_next = board_info_db_get_next(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, (void *)&pse_port_list_ptr->list_keys, (void **)&pse_port_list_ptr);
     }
 
+exit:
     rwlock_excl_release(&lock);
 
-    return poe_op_ok_E;
+    return result;
 }
 
 /**
@@ -244,7 +355,7 @@ poe_op_result_t shared_memory_initialize() {
  * @return #poe_op_ok_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poe_op_result_t internal_poe_device_initialize(void) {
+poe_op_result_t poe_device_initialize(void) {
     
     poe_op_result_t result = poe_op_ok_E;
     /* init sempahore */
@@ -615,27 +726,15 @@ uint16_t swap16(uint16_t value) {
     return (value << 8) | (value >> 8);
 }
 
-void main() {
-        char            profile_file[100];
+bool board_info_initialize() {
+    char            profile_file[100];
     char            file_name[100];
-    /* PDL_STATUS      pdl_status; */
-#ifdef LINUX
-    char            ext_file[100];
-    FILE            *file_PTR;
-#endif 
-
-    XML_PARSER_RET_CODE_TYP     xml_status;
-    bool   sysconf_status;     
     PDL_STATUS                                      status;
-    XML_PARSER_ROOT_DESCRIPTOR_TYP                  xmlRoot;
+    XML_PARSER_ROOT_DESCRIPTOR_TYP                  xml_root;
     PDLIB_OS_CALLBACK_API_STC                        callbacks;
     char                                           *base_name_PTR, base_name[256],
-                                                   full_path[384], fileName[256] = "/local/store/sai-poe/sai_poe_library/board_info/rdac5xpoe.xml";
-/*!*************************************************************************/
-/*!                      F U N C T I O N   L O G I C                       */
-/*!*************************************************************************/
-    
-    strcpy(base_name, fileName);
+                                                   full_path[256] = "/local/store/sai-poe/sai_poe_library/board_info/rdac5xpoe.xml";
+    strcpy(base_name, full_path);
     base_name_PTR = dirname(base_name);
     
     /* Project_profile Init */
@@ -647,15 +746,34 @@ void main() {
     callbacks.arXmlUncompressClbk = xpSaiPdlibXmlUncompressCallback;
     callbacks.getXmlSignatureClbk = xpSaiPdlibgetXmlSignatureCallback;
 
-    status = pdlibInit((char *)fileName, (char *)"saiplt", &callbacks, &xmlRoot);
+    status = pdlibInit((char *)full_path, (char *)"saiplt", &callbacks, &xml_root);
+    if(status != PDL_OK) {
+        return FALSE;
+    }
 
-    status = prvPdlCodeParser(xmlRoot);
+    status = prvPdlCodeParser(xml_root);
+    if(status != PDL_OK) {
+        return FALSE;
+    }
 
     status = prvPdlFeaturesDataHandler();
+    if(status != PDL_OK) {
+        return FALSE;
+    }
 
-    status = prvPdlFeaturesDataGet(&feature_data_db_PTR);
+    status = prvPdlFeaturesDataGet(&board_info_db_PTR);
+    if(status != PDL_OK) {
+        return FALSE;
+    }
 
-    internal_poe_device_initialize();
+    return TRUE;
+}
 
-    return;
+void main() {
+    
+    if(!board_info_initialize()) {
+        return;
+    }
+
+    poe_device_initialize();
 }   

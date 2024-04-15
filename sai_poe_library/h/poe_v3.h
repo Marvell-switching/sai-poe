@@ -812,7 +812,7 @@ typedef struct
     }
 
 poe_op_result_t internal_create_object(poe_object_id_t *poe_object_id);
-poe_op_result_t internal_poe_device_initialize(void);
+poe_op_result_t poe_device_initialize(void);
 bool poe_port_get_first_index(uint32_t *front_panel_index);
 bool poe_port_get_next_index(uint32_t *front_panel_index);
 poe_port_hw_type_t poe_get_port_poe_hw_type(uint32_t front_panel_index);

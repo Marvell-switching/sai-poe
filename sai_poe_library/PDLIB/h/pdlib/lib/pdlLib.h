@@ -32,7 +32,7 @@ extern "C" {
 ********************************************************************************
 */
 
-#include "../common/pdlTypes.h"
+#include <pdlib/common/pdlTypes.h>
 
 /**
 * @defgroup LIB

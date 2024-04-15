@@ -32,9 +32,9 @@ extern "C" {
  * @version   1
 ********************************************************************************
 */
-#include "../../common/pdlTypes.h"
-#include "../../xml/xmlParser.h"
-#include "../../xml/private/prvXmlParserData.h"
+#include <pdlib/common/pdlTypes.h>
+#include <pdlib/xml/xmlParser.h>
+#include <pdlib/xml/private/prvXmlParserData.h>
 /**
 * @addtogroup XML
 * @{

@@ -32,7 +32,7 @@ extern "C" {
  * @version   1
 ********************************************************************************
 */
-#include "../common/pdlTypes.h"
+#include <pdlib/common/pdlTypes.h>
 
 /**
  * @defgroup XML XML

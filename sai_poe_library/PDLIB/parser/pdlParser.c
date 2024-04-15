@@ -1,11 +1,11 @@
 /* ---------------------------------------------------------------------------------------------------------------
    Generated from sai_poe_yang_module based on revision 2024-04-01:1.01, PoE support added. on 10/04/2024 11:59:36
    --------------------------------------------------------------------------------------------------------------- */
-#include "../h/pdlib/common/pdlTypes.h"
-#include "../h/pdlib/lib/pdlLib.h"
-#include "../h/pdlib/lib/private/prvPdlLib.h"
-#include "../h/pdlib/xml/private/prvXmlParser.h"
-#include "../h/pdlib/xml/private/prvXmlParserBuilder.h"
+#include <pdlib/common/pdlTypes.h>
+#include <pdlib/lib/pdlLib.h>
+#include <pdlib/lib/private/prvPdlLib.h>
+#include <pdlib/xml/private/prvXmlParser.h>
+#include <pdlib/xml/private/prvXmlParserBuilder.h>
 #include "pdlParser.h"
 
     /* common definitions */

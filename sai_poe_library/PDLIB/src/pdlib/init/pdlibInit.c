@@ -22,10 +22,9 @@
  *$              EXTERNAL DECLARATIONS (IMPORT)
  *!**************************************************************************
  *!*/
-#include "../../../h/pdlib/xml/private/prvXmlParser.h"
-#include "../../../h/pdlib/xml/private/prvXmlParser.h"
-#include "../../../h/pdlib/lib/private/prvPdlLib.h"
-#include "../../../h/pdlib/init/pdlInit.h"
+#include <PDLIB/h/pdlib/xml/private/prvXmlParser.h>
+#include <pdlib/lib/private/prvPdlLib.h>
+#include <pdlib/init/pdlInit.h>
 
 /* *************************************************************************
  *$              LOCAL VARIABLE DEFINITIONS

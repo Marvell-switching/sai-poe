@@ -24,13 +24,13 @@
  *!**************************************************************************
  *!*/
 #include <stdarg.h>
-#include "../../../h/pdlib/init/pdlInit.h"
-#include "../../../h/pdlib/lib/private/prvPdlLib.h"
-#include "../../../h/pdlib/lib/private/prvPdlLibLinkedList.h"
-#include "../../../h/pdlib/lib/private/prvPdlLibArray.h"
-#include "../../../h/pdlib/xml/xmlParser.h"
-#include "../../../h/pdlib/xml/private/prvXmlParser.h"
-#include "../../../h/pdlib/xml/private/prvXmlParserBuilder.h"
+#include <pdlib/init/pdlInit.h>
+#include <pdlib/lib/private/prvPdlLib.h>
+#include <pdlib/lib/private/prvPdlLibLinkedList.h>
+#include <pdlib/lib/private/prvPdlLibArray.h>
+#include <pdlib/xml/xmlParser.h>
+#include <pdlib/xml/private/prvXmlParser.h>
+#include <pdlib/xml/private/prvXmlParserBuilder.h>
 
 #ifndef _WIN32
 int vsnprintf(char * s, size_t n, const char * format, va_list arg);
@@ -926,8 +926,8 @@ extern BOOLEAN prvPdlXmlVerificationHandler(
     {
         prvPdlibOsFree(signaturePtr);
         fclose(signature_fd);
-        //return FALSE;
         return TRUE;
+        //return FALSE;
     }
 
     prvPdlibOsFree(signaturePtr);
