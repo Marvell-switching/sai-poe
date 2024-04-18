@@ -22,6 +22,7 @@
 #include <PDLIB/parser/pdlParser.h>
 #include <PDLIB/h/pdlib/init/pdlInit.h>
 #include <PDLIB/h/pdlib/lib/pdlLib.h>
+#include <h/utils/log.h>
 
 static PDL_FEATURE_DATA_STC        *board_info_db_PTR;
 static XML_PARSER_ROOT_DESCRIPTOR_TYP   xml_root_id;
@@ -64,6 +65,7 @@ static  BOOLEAN xpSaiPdlibXmlUncompressCallback(
             return TRUE;
         }
     }
+
     return FALSE;
 }
 
@@ -227,13 +229,12 @@ poe_op_result_t database_initialize()
     PDL_PSEPORT_LIST_PARAMS_STC *pse_port_list_ptr = NULL;
     bool get_next = TRUE;
     poe_op_result_t result = poe_op_ok_E;
-
-    rwlock_excl_acquire(&lock);
     
     /* create dictionary for the poe device */
     device_db_ptr = create_dictionary(num_of_devices);
     if(!device_db_ptr) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to create poe device dictionary");
         goto exit;
     }
     
@@ -242,6 +243,7 @@ poe_op_result_t database_initialize()
     
     if(!device_db_entry_ptr) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to read NULL entry");
         goto exit;
     }
 
@@ -249,18 +251,21 @@ poe_op_result_t database_initialize()
 
     if(!dict_put(device_db_ptr, key, (void*)(device_db_entry_ptr))) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to insert into poe device dictionary");
         goto exit;
     }
 
     /* get the number of pse devices, and create the dictionary for the poe pse list */
     if(!board_info_db_num_of_entries_get(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, &num_of_pses)) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to get num of entries");
         goto exit;
     }
 
     pse_db_ptr = create_dictionary(num_of_pses);
     if(!pse_db_ptr) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to create poe pse dictionary");
         goto exit;
     }
 
@@ -273,6 +278,7 @@ poe_op_result_t database_initialize()
 
         if(!pse_db_entry_ptr) {
             result = poe_op_failed_E;
+            LOG_ERROR("failed to read NULL entry");
             goto exit;
         }
         
@@ -280,6 +286,7 @@ poe_op_result_t database_initialize()
 
         if(!dict_put(pse_db_ptr, key, (void*)(pse_db_entry_ptr))) {
             result = poe_op_failed_E;
+            LOG_ERROR("failed to insert into poe device dictionary");
             goto exit;
         }
 
@@ -290,12 +297,14 @@ poe_op_result_t database_initialize()
     /* get the number of poe ports, and create the dictionary for the poe port list */
     if(!board_info_db_num_of_entries_get(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, &num_of_ports)) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to get num of entries");
         goto exit;
     }
 
     port_db_ptr = create_dictionary(num_of_ports);
     if(!port_db_ptr) {
         result = poe_op_failed_E;
+        LOG_ERROR("failed to create poe port dictionary");
         goto exit;
     }
 
@@ -308,6 +317,7 @@ poe_op_result_t database_initialize()
 
         if(!port_db_entry_ptr) {
             result = poe_op_failed_E;
+            LOG_ERROR("failed to read NULL entry");
             goto exit;
         }
 
@@ -326,6 +336,7 @@ poe_op_result_t database_initialize()
 
         if(!dict_put(port_db_ptr, key, (void*)(port_db_entry_ptr))) {
             result = poe_op_failed_E;
+            LOG_ERROR("failed to insert into poe device dictionary");
             goto exit;
         }
 
@@ -334,8 +345,6 @@ poe_op_result_t database_initialize()
     }
 
 exit:
-    rwlock_excl_release(&lock);
-
     return result;
 }
 
@@ -350,12 +359,65 @@ poe_op_result_t shared_memory_initialize() {
 }
 
 /**
+ * @brief Initialize board info, to receive board specific parameters
+ *
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t board_info_initialize() {
+    char            profile_file[100];
+    char            file_name[100];
+    PDL_STATUS                                      status;
+    XML_PARSER_ROOT_DESCRIPTOR_TYP                  xml_root;
+    PDLIB_OS_CALLBACK_API_STC                        callbacks;
+    char                                           *base_name_PTR, base_name[256],
+                                                   full_path[256] = "/local/store/sai-poe/sai_poe_library/board_info/rdac5xpoe.xml";
+    strcpy(base_name, full_path);
+    base_name_PTR = dirname(base_name);
+    
+    /* Project_profile Init */
+    memset(&callbacks, 0, sizeof(callbacks));
+    callbacks.printStringPtr       = printf;
+    callbacks.mallocPtr            = malloc;
+    callbacks.freePtr              = free;
+    callbacks.debugLogPtr          = xpSaiPdlibDebugCallback;
+    callbacks.arXmlUncompressClbk = xpSaiPdlibXmlUncompressCallback;
+    callbacks.getXmlSignatureClbk = xpSaiPdlibgetXmlSignatureCallback;
+
+    status = pdlibInit((char *)full_path, (char *)"saiplt", &callbacks, &xml_root);
+    if(status != PDL_OK) {
+        LOG_ERROR("failed to initialize pdlib");
+        return poe_op_failed_E;
+    }
+
+    status = prvPdlCodeParser(xml_root);
+    if(status != PDL_OK) {
+        LOG_ERROR("failed to initialize code parser");
+        return poe_op_failed_E;
+    }
+
+    status = prvPdlFeaturesDataHandler();
+    if(status != PDL_OK) {
+        LOG_ERROR("failed to set feature data handler");
+        return poe_op_failed_E;
+    }
+
+    status = prvPdlFeaturesDataGet(&board_info_db_PTR);
+    if(status != PDL_OK) {
+        LOG_ERROR("failed to get feature data");
+        return poe_op_failed_E;
+    }
+
+    return poe_op_ok_E;
+}
+
+/**
  * @brief General initialize for all the PoE components
  *
  * @return #poe_op_ok_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poe_op_result_t poe_device_initialize(void) {
+poe_op_result_t poe_initialize(void) {
     
     poe_op_result_t result = poe_op_ok_E;
     /* init sempahore */
@@ -363,37 +425,45 @@ poe_op_result_t poe_device_initialize(void) {
 
     rwlock_excl_acquire(&lock);
 
+    /* init board info (from external db) */
+    result = board_info_initialize();
+    
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to initialize board info");
+        goto exit;
+    }
+
     /* init databases */
     result = database_initialize();
     if(result != poe_op_ok_E) {
-        rwlock_excl_release(&lock);
-        return result;
+        LOG_ERROR("failed to initialize databases");
+        goto exit;
     }
 
     /* set poe port matrix */
     result = poe_port_matrix_initialize();
     if(result != poe_op_ok_E) {
-        rwlock_excl_release(&lock);
-        return result;
+        LOG_ERROR("failed to initialize port matrix");
+        goto exit;
     }
 
     /* set poe port standard */
     result = poe_port_standard_initialize();
     if(result != poe_op_ok_E) {
-        rwlock_excl_release(&lock);
-        return result;
+        LOG_ERROR("failed to initialize port standard");
+        goto exit;
     }
 
     /* init shared memory */
     result = shared_memory_initialize();
     if(result != poe_op_ok_E) {
-        rwlock_excl_release(&lock);
-        return result;
+        LOG_ERROR("failed to initialize shared memory");
+        goto exit;
     }
 
+exit:
     rwlock_excl_release(&lock);
-
-    return poe_op_ok_E;
+    return result;
 }
 
 /**
@@ -545,6 +615,7 @@ poe_op_result_t poe_v3_send_receive_msg (
     poe_v3_set_msg_opCode_MAC(op_code, msg_level, direction, msg_id);
     buf_PTR = (uint8_t*)data_PTR;
     if (true != EXTHWG_POE_IPc_send_recieve_msg(send, op_code.op_code_num_32, data_len, buf_PTR)) {
+        LOG_ERROR("failed to send/recieve poe message, msg id %d, direction %d, op code: %d, level %d", msg_id, direction, op_code.op_code_num_32, msg_level);
         return poe_op_failed_E;
     }
 
@@ -568,6 +639,7 @@ poe_op_result_t poe_port_matrix_initialize() {
     
     /* for every front panel (logical) poe port in the device, set the correct physical port */
     if(!poe_port_get_first_index(&front_panel_index)) {
+        LOG_ERROR("failed to get first index");
         return poe_op_failed_E;
     }
 
@@ -576,10 +648,12 @@ poe_op_result_t poe_port_matrix_initialize() {
         poe_port_hw_type = poe_get_port_poe_hw_type(front_panel_index);
 
         if(poe_port_hw_type == poe_port_hw_type_invalid_E) {
+            LOG_ERROR("failed to get valid poe type");
             return poe_op_failed_E;
         }
 
          if(!poe_port_get_physical_index(front_panel_index, &physical_number_a)) {
+            LOG_ERROR("failed to get physical index");
             return poe_op_failed_E;
          }
 
@@ -592,6 +666,7 @@ poe_op_result_t poe_port_matrix_initialize() {
             (poe_port_hw_type == poe_port_hw_type_bt_type4_E)) {
             
             if(!poe_port_get_second_physical_index(front_panel_index, &physical_number_b)) {
+                LOG_ERROR("failed to get second index");
                 return poe_op_failed_E;
             }
 
@@ -611,6 +686,7 @@ poe_op_result_t poe_port_matrix_initialize() {
             (uint8_t*)&set_matrix_params);
     } 
 
+    LOG_ERROR("failed to get entries");
     return poe_op_failed_E;
 }
 
@@ -630,6 +706,7 @@ poe_op_result_t poe_port_standard_initialize() {
     memset(&port_standard_params, 0xff, sizeof(poe_v3_msg_sysPortSupportedStd_STC));
     
     if(!poe_port_get_first_index(&front_panel_index)) {
+        LOG_ERROR("failed to get first index");
         return poe_op_failed_E;
     }
 
@@ -662,7 +739,7 @@ poe_op_result_t poe_port_standard_initialize() {
  */
 poe_op_result_t poe_port_set_admin_enable (
     uint32_t front_panel_index,
-    bool enable
+    const bool enable
 )
 {
     poe_v3_msg_portEnable_STC   port_params;
@@ -726,54 +803,6 @@ uint16_t swap16(uint16_t value) {
     return (value << 8) | (value >> 8);
 }
 
-bool board_info_initialize() {
-    char            profile_file[100];
-    char            file_name[100];
-    PDL_STATUS                                      status;
-    XML_PARSER_ROOT_DESCRIPTOR_TYP                  xml_root;
-    PDLIB_OS_CALLBACK_API_STC                        callbacks;
-    char                                           *base_name_PTR, base_name[256],
-                                                   full_path[256] = "/local/store/sai-poe/sai_poe_library/board_info/rdac5xpoe.xml";
-    strcpy(base_name, full_path);
-    base_name_PTR = dirname(base_name);
-    
-    /* Project_profile Init */
-    memset(&callbacks, 0, sizeof(callbacks));
-    callbacks.printStringPtr       = printf;
-    callbacks.mallocPtr            = malloc;
-    callbacks.freePtr              = free;
-    callbacks.debugLogPtr          = xpSaiPdlibDebugCallback;
-    callbacks.arXmlUncompressClbk = xpSaiPdlibXmlUncompressCallback;
-    callbacks.getXmlSignatureClbk = xpSaiPdlibgetXmlSignatureCallback;
-
-    status = pdlibInit((char *)full_path, (char *)"saiplt", &callbacks, &xml_root);
-    if(status != PDL_OK) {
-        return FALSE;
-    }
-
-    status = prvPdlCodeParser(xml_root);
-    if(status != PDL_OK) {
-        return FALSE;
-    }
-
-    status = prvPdlFeaturesDataHandler();
-    if(status != PDL_OK) {
-        return FALSE;
-    }
-
-    status = prvPdlFeaturesDataGet(&board_info_db_PTR);
-    if(status != PDL_OK) {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-void main() {
-    
-    if(!board_info_initialize()) {
-        return;
-    }
-
-    poe_device_initialize();
-}   
+// void main() {
+//     poe_initialize();
+// }
