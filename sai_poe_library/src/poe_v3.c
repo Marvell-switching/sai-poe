@@ -24,22 +24,23 @@
 #include <PDLIB/h/pdlib/lib/pdlLib.h>
 #include <h/utils/log.h>
 
-static PDL_FEATURE_DATA_STC        *board_info_db_PTR;
+static PDL_FEATURE_DATA_STC        *board_info_db_ptr;
 static XML_PARSER_ROOT_DESCRIPTOR_TYP   xml_root_id;
 
 /* global databases */
 Dictionary *device_db_ptr = NULL, *pse_db_ptr = NULL, *port_db_ptr = NULL;
+poe_v3_msg_sysPowerBank_STC power_bank_list = {0};
 /* lock critical sections when reading/writing */
 rwlock_excl_t lock;
 
-static void xpSaiPdlibDebugCallback(const char *func_name_PTR,
+static void xpSaiPdlibDebugCallback(const char *func_name_ptr,
                                     const char *format, ...)
 {
     va_list     argptr;
     char        log[1024];
     int         len;
 
-    snprintf(log, sizeof(len), "pdlib debug: [%s]", func_name_PTR);
+    snprintf(log, sizeof(len), "pdlib debug: [%s]", func_name_ptr);
     len = strlen(log);
     vsnprintf(&log[len], sizeof(log) - len, format, argptr);
 }
@@ -224,14 +225,15 @@ bool board_info_db_num_of_entries_get (
 poe_op_result_t database_initialize() 
 {
     uint64_t key;
-    uint32_t num_of_devices = 1, num_of_pses, num_of_ports, index = 0;
+    uint32_t num_of_entries = 1, index = 0;
     PDL_PSE_LIST_PARAMS_STC *pse_list_ptr = NULL;
     PDL_PSEPORT_LIST_PARAMS_STC *pse_port_list_ptr = NULL;
+    PDL_POEBANK_LIST_PARAMS_STC *power_banks_list_ptr = NULL;
     bool get_next = TRUE;
     poe_op_result_t result = poe_op_ok_E;
     
     /* create dictionary for the poe device */
-    device_db_ptr = create_dictionary(num_of_devices);
+    device_db_ptr = create_dictionary(num_of_entries);
     if(!device_db_ptr) {
         result = poe_op_failed_E;
         LOG_ERROR("failed to create poe device dictionary");
@@ -256,13 +258,13 @@ poe_op_result_t database_initialize()
     }
 
     /* get the number of pse devices, and create the dictionary for the poe pse list */
-    if(!board_info_db_num_of_entries_get(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, &num_of_pses)) {
+    if(!board_info_db_num_of_entries_get(board_info_db_ptr->data_PTR->poe.pselist.pseList_PTR, &num_of_entries)) {
         result = poe_op_failed_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
 
-    pse_db_ptr = create_dictionary(num_of_pses);
+    pse_db_ptr = create_dictionary(num_of_entries);
     if(!pse_db_ptr) {
         result = poe_op_failed_E;
         LOG_ERROR("failed to create poe pse dictionary");
@@ -270,7 +272,7 @@ poe_op_result_t database_initialize()
     }
 
     /* get hw data */
-    get_next = board_info_db_get_first(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, (void **)&pse_list_ptr);
+    get_next = board_info_db_get_first(board_info_db_ptr->data_PTR->poe.pselist.pseList_PTR, (void **)&pse_list_ptr);
 
     /* for each pse, set key value and update dictionary */
     while(get_next) {
@@ -291,25 +293,31 @@ poe_op_result_t database_initialize()
         }
 
         /* get hw data */
-        get_next = board_info_db_get_next(board_info_db_PTR->data_PTR->poe.pselist.pseList_PTR, (void *)&pse_list_ptr->list_keys, (void **)&pse_list_ptr);
+        get_next = board_info_db_get_next(board_info_db_ptr->data_PTR->poe.pselist.pseList_PTR, (void *)&pse_list_ptr->list_keys, (void **)&pse_list_ptr);
     }
 
     /* get the number of poe ports, and create the dictionary for the poe port list */
-    if(!board_info_db_num_of_entries_get(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, &num_of_ports)) {
+    if(!board_info_db_num_of_entries_get(board_info_db_ptr->data_PTR->poe.pseports.pseportList_PTR, &num_of_entries)) {
         result = poe_op_failed_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
 
-    port_db_ptr = create_dictionary(num_of_ports);
+    port_db_ptr = create_dictionary(num_of_entries);
     if(!port_db_ptr) {
         result = poe_op_failed_E;
         LOG_ERROR("failed to create poe port dictionary");
         goto exit;
     }
 
+    if(!board_info_db_num_of_entries_get(board_info_db_ptr->data_PTR->poe.pselist.pseList_PTR, &num_of_entries)) {
+        result = poe_op_failed_E;
+        LOG_ERROR("failed to get num of entries");
+        goto exit;
+    }
+
     /* get hw data */
-    get_next = board_info_db_get_first(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, (void **)&pse_port_list_ptr);
+    get_next = board_info_db_get_first(board_info_db_ptr->data_PTR->poe.pseports.pseportList_PTR, (void **)&pse_port_list_ptr);
 
     /* for each port, set key value and update dictionary */
     while(get_next) {
@@ -341,7 +349,25 @@ poe_op_result_t database_initialize()
         }
 
         /* get hw data */
-        get_next = board_info_db_get_next(board_info_db_PTR->data_PTR->poe.pseports.pseportList_PTR, (void *)&pse_port_list_ptr->list_keys, (void **)&pse_port_list_ptr);
+        get_next = board_info_db_get_next(board_info_db_ptr->data_PTR->poe.pseports.pseportList_PTR, (void *)&pse_port_list_ptr->list_keys, (void **)&pse_port_list_ptr);
+    }
+
+    /* get the number of power banks, and update the power bank list */
+    if(!board_info_db_num_of_entries_get(board_info_db_ptr->data_PTR->poe.poePowerBanks.poebankList_PTR, &num_of_entries)) {
+        result = poe_op_failed_E;
+        LOG_ERROR("failed to get num of entries");
+        goto exit;
+    }
+
+    /* get hw data */
+    get_next = board_info_db_get_first(board_info_db_ptr->data_PTR->poe.poePowerBanks.poebankList_PTR, (void **)&power_banks_list_ptr);
+
+    /* for each pse, set key value and update the array */
+    while(get_next) {
+        power_bank_list.power_bank_w_swap[power_banks_list_ptr->list_keys.bankNumber] = power_banks_list_ptr->bankWatts;
+
+        /* get hw data */
+        get_next = board_info_db_get_next(board_info_db_ptr->data_PTR->poe.poePowerBanks.poebankList_PTR, (void *)&power_banks_list_ptr->list_keys, (void **)&power_banks_list_ptr);
     }
 
 exit:
@@ -370,10 +396,10 @@ poe_op_result_t board_info_initialize() {
     PDL_STATUS                                      status;
     XML_PARSER_ROOT_DESCRIPTOR_TYP                  xml_root;
     PDLIB_OS_CALLBACK_API_STC                        callbacks;
-    char                                           *base_name_PTR, base_name[256],
+    char                                           *base_name_ptr, base_name[256],
                                                    full_path[256] = "/local/store/sai-poe/sai_poe_library/board_info/rdac5xpoe.xml";
     strcpy(base_name, full_path);
-    base_name_PTR = dirname(base_name);
+    base_name_ptr = dirname(base_name);
     
     /* Project_profile Init */
     memset(&callbacks, 0, sizeof(callbacks));
@@ -402,7 +428,7 @@ poe_op_result_t board_info_initialize() {
         return poe_op_failed_E;
     }
 
-    status = prvPdlFeaturesDataGet(&board_info_db_PTR);
+    status = prvPdlFeaturesDataGet(&board_info_db_ptr);
     if(status != PDL_OK) {
         LOG_ERROR("failed to get feature data");
         return poe_op_failed_E;
@@ -451,6 +477,13 @@ poe_op_result_t poe_initialize(void) {
     result = poe_port_standard_initialize();
     if(result != poe_op_ok_E) {
         LOG_ERROR("failed to initialize port standard");
+        goto exit;
+    }
+
+    /* set poe power banks */
+    result = poe_power_bank_initialize();
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to initialize power");
         goto exit;
     }
 
@@ -586,7 +619,7 @@ bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_l
  * @param[in] direction get or set
  * @param[in] msg_id message id
  * @param[in] data_len data length
- * @param[out] data_PTR data
+ * @param[out] data_ptr data
  * 
  * @return #true if operation is successful otherwise false
  *
@@ -599,25 +632,28 @@ poe_op_result_t poe_v3_send_receive_msg (
     uint16_t                                 msg_id,
     uint8_t                                  data_len,
     /*!     INPUTS / OUTPUTS:   */
-    void*                                   data_PTR
+    void*                                   data_ptr
     /*!     OUTPUTS:            */
 )
 {
 /*!****************************************************************************/
 /*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
 /*!****************************************************************************/
-    uint8_t  *buf_PTR;
+    uint8_t  *buf_ptr;
     bool send=(direction==poe_v3_msg_dir_get_CNS)?false:true;
     poe_v3_msg_opCode_UNT op_code;
 /*!****************************************************************************/
 /*!                      F U N C T I O N   L O G I C                          */
 /*!****************************************************************************/   
     poe_v3_set_msg_opCode_MAC(op_code, msg_level, direction, msg_id);
-    buf_PTR = (uint8_t*)data_PTR;
-    if (true != EXTHWG_POE_IPc_send_recieve_msg(send, op_code.op_code_num_32, data_len, buf_PTR)) {
+    buf_ptr = (uint8_t*)data_ptr;
+    if (true != EXTHWG_POE_IPc_send_recieve_msg(send, op_code.op_code_num_32, data_len, buf_ptr)) {
         LOG_ERROR("failed to send/recieve poe message, msg id %d, direction %d, op code: %d, level %d", msg_id, direction, op_code.op_code_num_32, msg_level);
         return poe_op_failed_E;
     }
+
+    /* TEMP - return 11 for all data  */
+    memset(data_ptr, 11, sizeof(uint8_t));
 
     return poe_op_ok_E;
 } 
@@ -729,6 +765,225 @@ poe_op_result_t poe_port_standard_initialize() {
 }
 
 /**
+ * @brief intialize power banks
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_power_bank_initialize() {
+    uint32_t index = 0;
+    poe_v3_msg_sysPowerBank_STC power_bank_params;
+
+    for (index = 0; index < poe_max_num_of_powerBanks_CNS ; index++) {
+        power_bank_params.power_bank_w_swap[index] = swap16(power_bank_list.power_bank_w_swap[index]); 
+    }
+    
+    return poe_v3_send_receive_msg(
+            poe_v3_msg_level_system_CNS, 
+            poe_v3_msg_dir_set_CNS,
+            poe_v3_sys_msg_powerBankConfig_CNS,
+            sizeof(power_bank_params),
+            (uint8_t*)&power_bank_params);
+}
+
+/**
+ * @brief Get the total system power
+ * 
+ * @param[in] poe_dev_num device number
+ * @param[out] total_power_mw_ptr total power in milliwatts
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_dev_get_total_power (
+    /*!     INPUTS:             */
+    UINT_32 poe_dev_num, 
+    UINT_32 *total_power_mw_ptr
+)
+{
+    poe_v3_msg_sysPowerConsumption_STC power_consumption_params;
+    poe_op_result_t result; 
+
+    if(total_power_mw_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+    
+    *total_power_mw_ptr = power_bank_list.power_bank_w_swap[0];
+
+    rwlock_excl_release(&lock);
+    
+    return result;
+}
+
+/**
+ * @brief Get the power consumption
+ * 
+ * @param[in] poe_dev_num device number
+ * @param[out] total_power_mw_ptr active power consumption in milliwatts
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_dev_get_power_consumption (
+    /*!     INPUTS:             */
+    UINT_32 poe_dev_num, 
+    UINT_32 *power_consumption_mw_ptr
+)
+{
+    poe_v3_msg_sysPowerConsumption_STC power_consumption_params;
+    poe_op_result_t result; 
+
+    if(power_consumption_mw_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+    
+    memset(&power_consumption_params, 0, sizeof(power_consumption_params));
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_powerConsumption_CNS, sizeof(power_consumption_params), (UINT_8*)&power_consumption_params);
+
+    if(result == poe_op_ok_E) {
+        *power_consumption_mw_ptr = (swap32(power_consumption_params.powerConsumption_swap)) + 0.5;
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+    
+    return result;
+}
+
+/**
+ * @brief Get the system version (firmware)
+ * 
+ * @param[in] poe_dev_num device number
+ * @param[out] version_ptr frimware version
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_dev_get_version (
+    /*!     INPUTS:             */
+    UINT_32 poe_dev_num, 
+    char *version_ptr
+)
+{
+    poe_v3_msg_sysSystemVersion_STC *version_params_ptr;
+    poe_op_result_t result; 
+
+    if(version_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(version_params_ptr, 0, sizeof(poe_v3_msg_sysSystemVersion_STC));
+    memset(version_params_ptr->pse_version_data, 0xFF, sizeof(version_params_ptr->pse_version_data));
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_systemVersion_CNS, sizeof(*version_params_ptr), (uint8_t*)version_params_ptr);
+
+    if(result == poe_op_ok_E) {
+        snprintf (version_ptr, 20, "%d.%d.%d.%d", 
+                    version_params_ptr->poeFwVersion.ver_bytes[0],
+                    version_params_ptr->poeFwVersion.ver_bytes[1],
+                    version_params_ptr->poeFwVersion.ver_bytes[2], 
+                    version_params_ptr->poeFwVersion.ver_bytes[3]);
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Get power limit mode (class/port limit)
+ * 
+ * @param[in] poe_dev_num device number
+ * @param[out] power_limit_ptr power limit
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_dev_get_power_limit_mode (
+    /*!     INPUTS:             */
+    uint32_t poe_dev_num, 
+    uint32_t *power_limit_ptr
+)
+{
+    poe_v3_msg_sysPowerLimitMode_STC limit_mode_params;
+    poe_op_result_t result; 
+
+    if(power_limit_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(&limit_mode_params, 0, sizeof(poe_v3_msg_sysPowerLimitMode_STC));
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_systemVersion_CNS, sizeof(limit_mode_params), (uint8_t*)&limit_mode_params);
+
+    if(result == poe_op_ok_E) {
+        *power_limit_ptr = (uint32_t)limit_mode_params.limit_mode;
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+    
+    return result;
+}
+
+/**
+ * @brief Get power limit mode (class/port limit)
+ * 
+ * @param[in] poe_dev_num device number
+ * @param[out] power_limit_ptr power limit
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_dev_set_power_limit_mode (
+    /*!     INPUTS:             */
+    uint32_t poe_dev_num, 
+    uint32_t power_limit_ptr
+)
+{
+    poe_v3_msg_sysPowerLimitMode_STC limit_mode_params;
+    poe_op_result_t result; 
+
+    if(power_limit_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(&limit_mode_params, 0, sizeof(poe_v3_msg_sysPowerLimitMode_STC));
+    limit_mode_params.limit_mode = (poe_v3_powerLimitMode_TYP)power_limit_ptr;
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_set_CNS, poe_v3_sys_msg_systemVersion_CNS, sizeof(limit_mode_params), (uint8_t*)&limit_mode_params);
+
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+    
+    return result;
+}
+
+/**
  * @brief Set enable/disable on poe port
  * 
  * @param[in] front_panel_index front panel index
@@ -753,6 +1008,10 @@ poe_op_result_t poe_port_set_admin_enable (
 
     result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_set_CNS, poe_v3_port_msg_portEnable_CNS, sizeof(port_params), (uint8_t*)&port_params);
 
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to set data");
+    }
+
     rwlock_excl_release(&lock);
 
     return result;
@@ -774,6 +1033,11 @@ poe_op_result_t poe_port_get_admin_enable (
 {
     poe_v3_msg_portEnable_STC   port_params;
     poe_op_result_t result;
+
+    if(enable == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
 
     rwlock_excl_acquire(&lock);  
 
@@ -803,6 +1067,23 @@ uint16_t swap16(uint16_t value) {
     return (value << 8) | (value >> 8);
 }
 
+/**
+ * @brief swap uint32_t
+ * 
+ * @param[in] value uint32_t value
+ * 
+ * @return swapped uint32_t value
+ * 
+ */
+uint32_t swap32(uint32_t value) {
+    return ((value & 0xFF000000) >> 24) |     // Move byte 3 to byte 0
+           ((value & 0x00FF0000) >> 8)  |     // Move byte 2 to byte 1
+           ((value & 0x0000FF00) << 8)  |     // Move byte 1 to byte 2
+           ((value & 0x000000FF) << 24);      // Move byte 0 to byte 3
+}
+
+
+/* TEMP - main() moved to sai_poe for the sai menu options */
 // void main() {
 //     poe_initialize();
 // }

@@ -822,9 +822,11 @@ bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_l
 poe_op_result_t poe_v3_send_receive_msg(poe_v3_msg_level_TYP msg_type, poe_v3_msg_direction_TYP direction, uint16_t msg_id, uint8_t data_len, void *data_PTR);
 poe_op_result_t poe_port_matrix_initialize();
 poe_op_result_t poe_port_standard_initialize();
+poe_op_result_t poe_power_bank_initialize();
 poe_op_result_t poe_port_set_admin_enable(uint32_t front_panel_index, bool enable);
 poe_op_result_t poe_port_get_admin_enable(uint32_t front_panel_index, bool *enable);
 uint16_t swap16(uint16_t value);
+uint32_t swap32(uint32_t value);
 
 typedef struct {
     bool is_poe_device_initialized;

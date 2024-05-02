@@ -26,9 +26,11 @@
 #undef  __MODULE__
 #define __MODULE__ SAI_POE
 
+/* global sai db pointer */
 global_poe *g_sai_db_ptr = NULL;
 /* lock critical sections when reading/writing */
 rwlock_excl_t lock;
+/* dictionaries holding poe devie/pse/port mappings (sai <-> v3 poe) */
 Dictionary *poe_object_device_mapping_ptr = NULL, *poe_object_pse_mapping_ptr = NULL, *poe_object_port_mapping_ptr = NULL;
 
 /**
@@ -298,14 +300,8 @@ sai_status_t set_poe_device_attribute(
     /* switch case placeholder, may change to function pointers */
     switch (attr->id)
     {
-    case SAI_POE_DEVICE_ATTR_TOTAL_POWER:
-        break;
-    case SAI_POE_DEVICE_ATTR_POWER_CONSUMPTION:
-        break;
-    case SAI_POE_DEVICE_ATTR_VERSION:
-        break;
     case SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE:
-        result = poe_port_set_admin_enable(*internal_device_id_ptr, attr->value.booldata);
+        result = poe_dev_set_power_limit_mode(*internal_device_id_ptr, attr->value.s32);
         break;
     default:
         break;
@@ -349,13 +345,16 @@ static sai_status_t get_poe_device_attribute(
         switch (attr_list[i].id)
         {
         case SAI_POE_DEVICE_ATTR_TOTAL_POWER:
-            result = poe_port_get_admin_enable(*internal_device_id_ptr, &(attr_list[i].value.booldata));
+            result = poe_dev_get_total_power(*internal_device_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_DEVICE_ATTR_POWER_CONSUMPTION:
+            result = poe_dev_get_power_consumption(*internal_device_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_DEVICE_ATTR_VERSION:
+            result = poe_dev_get_version(*internal_device_id_ptr, &(attr_list[i].value.chardata));
             break;
         case SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE:
+            result = poe_dev_get_power_limit_mode(*internal_device_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
             break;
@@ -665,6 +664,12 @@ const sai_poe_api_t poe_api = {
     get_poe_port_attribute,
 };
 
+/**
+ * @brief main.
+ *
+ * @return SAI_STATUS_SUCCESS if operation is successful otherwise a different
+ *  error code is returned.
+ */
 void main() {
     int choice;
     sai_object_id_t switch_id = 0, poe_device_id = 0, poe_pse_id[16] = {0}, poe_port_id[48] = {0};
@@ -828,10 +833,5 @@ void main() {
 
         printf("Do you want to continue? (y/n): ");
         scanf(" %c", &exit_choice);
-    } while (exit_choice == 'y' || exit_choice == 'Y');
-    
-    
-    
-    
-    
+    } while (exit_choice == 'y' || exit_choice == 'Y'); 
 }
