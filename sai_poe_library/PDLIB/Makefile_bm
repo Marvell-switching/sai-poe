@@ -1,0 +1,138 @@
+# New Makefile for PDL (Ez bringup)
+#
+SHELL := /bin/bash
+
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURR_DIR := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
+ROOT_DIR := $(CURR_DIR)
+
+ECHO = echo
+MKDIR = mkdir -p
+CP = cp -f
+RM = rm -rf
+
+CROSS_COMPILE ?= /usr/bin/
+
+CC = $(CROSS_COMPILE)gcc
+LD = $(CROSS_COMPILE)ld
+AR = $(CROSS_COMPILE)ar
+
+GNU_CC := $(CC)
+
+OBJ_EXTENSION=o
+DEP_EXTENSION=d
+LIB_EXTENSION=a
+
+ifneq ("$(GREY_MODE)", "yes")
+	BUILD_DIR = build_dir_bm
+else
+	BUILD_DIR = build_dir_gm
+endif
+
+ifneq ($(strip $(BUILD_DIR_TARGET)),)
+BUILD_DIR := $(BUILD_DIR)/$(BUILD_DIR_TARGET)
+endif
+
+OUT_DIR := $(BUILD_DIR)
+OBJ_OUT_DIR = $(BUILD_DIR)/obj
+
+PDLIB_LIB := $(OUT_DIR)/libpdlib.a
+
+# Name of makefile to include in each sub-module
+MAKEFILE := Makefile
+
+.PHONY: all
+all: $(PDLIB_LIB)
+
+pdlib: $(PDLIB_LIB)
+
+clean:
+	$(RM) $(OUT_DIR)
+
+#######################################################
+
+MODULES := \
+	src
+
+export BUILD_MODE = DEBUG
+ifeq ($(BUILD_MODE),DEBUG)
+    DEBUG_CFLAGS = -g -O0
+else
+    DEBUG_CFLAGS = -O2
+endif
+
+ifdef ADD_PREFIX_TO_CODE
+PDLPREFIX_FLAG=-DPDLIBPREFIX=$(ADD_PREFIX_TO_CODE)
+endif
+
+BASE_CFLAGS = $(DEBUG_CFLAGS) -Wall -Werror -pthread -Wno-comment -Wno-pointer-sign -Wno-format $(PDLPREFIX_FLAG)
+override CFLAGS += $(BASE_CFLAGS)
+override CFLAGS += -Ih
+ifneq ("$(GREY_MODE)", "yes")
+	override CFLAGS += -DLINUX 
+endif
+
+# Function compile(flags, output_folder)
+#
+# Compile a .c file into .o file using the defined toolchain, including dependecy .d file.
+# Object and dependency files will be located together in output_folder,
+# under the relative path to the source.
+#
+# Example: $(call compile $(CFLAGS),/local/objects)
+# Source file: foo/bar/baz.c
+# Targets: /local/objects/foo/bar/baz.o
+#          /local/objects/foo/bar/baz.d
+
+define make_depend
+@# Create output folder
+	@ $(MKDIR) $(dir $@)
+@# print make_depend command
+	@ echo MD $<
+@# create dependency file
+	@ $(GNU_CC) -MM -c $1 $< -o $2/$*.$(DEP_EXTENSION)
+@# Duplicate it
+	@ $(CP) $2/$*.$(DEP_EXTENSION) $2/$*.tmp
+@# Create empty rule per file in dependency rule to avoid "No rule to make target ..." Errors 
+	@ sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' -e '/^$$/d' -e 's/$$/ :/' < $2/$*.$(DEP_EXTENSION) >> $2/$*.tmp
+@# Change object filename to include full path
+	@ sed -e 's/$(subst .,\.,$(notdir $*.o))/$(subst /,\/,$2/$*.$(OBJ_EXTENSION))/'  < $2/$*.tmp > $2/$*.$(DEP_EXTENSION)
+@# Remove temporary file
+	@ $(RM) $2/$*.tmp
+endef
+
+define compile
+@#	update dependency file
+	$(call make_depend,$1,$2)
+@# print compilation msg
+	@ $(ECHO) $(CC) $<
+@# compile
+	@ $(ECHO) $(CC) -c $1 $< -o $@
+	@ $(CC) -c $1 $< -o $@
+endef
+
+define make_lib
+	@ $(MKDIR) $(dir $@)
+	@ $(ECHO) $(AR) crus $@ $^
+	@ $(AR) crus $@ $^
+endef
+
+PDL_SRC := 
+DEP := 
+include $(patsubst %,%/$(MAKEFILE),$(MODULES))
+
+PDLIB_OBJ := $(patsubst %.c,$(OBJ_OUT_DIR)/%.$(OBJ_EXTENSION),$(PDL_SRC))
+DEP += $(patsubst %.o,%.d,$(PDLIB_OBJ))
+
+# linker options
+override LDFLAGS += -rdynamic -Wl,-Map=$(OUT_DIR)/$@/link.map
+
+# %.o - compile .c files to objects 
+$(OBJ_OUT_DIR)/%.o:  %.c
+	$(call compile,$(CFLAGS),$(OBJ_OUT_DIR))
+
+$(PDLIB_LIB): $(PDLIB_OBJ)
+	$(call make_lib)
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEP)
+endif
