@@ -23,6 +23,7 @@
 #include <PDLIB/h/pdlib/init/pdlInit.h>
 #include <PDLIB/h/pdlib/lib/pdlLib.h>
 #include <h/utils/log.h>
+#include <h/ipc/ipc_drv.h>
 
 static PDL_FEATURE_DATA_STC        *board_info_db_ptr;
 static XML_PARSER_ROOT_DESCRIPTOR_TYP   xml_root_id;
@@ -374,6 +375,270 @@ exit:
     return result;
 }
 
+/*****************************************************************************
+* FUNCTION NAME: HALP_config_poe_init_fw
+*
+* DESCRIPTION: Initialize poe firmware and decide which init flow to perform
+*              Init flows: perpetual or regular
+*
+*****************************************************************************/
+static poe_op_result_t HALP_config_poe_init_fw (
+    /*!     INPUTS:             */
+    void
+    /*!     INPUTS / OUTPUTS:   */
+    /*!     OUTPUTS:            */
+)
+{
+/*!****************************************************************************/
+/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
+/*!****************************************************************************/
+    // BOXG_poe_device_type_ENT                    poe_dev_hw_type;
+    // poe_op_result_ENT               op_result;
+    EXTHWG_POE_IPc_MCU_Type_ENT                 exhw_mcuType=EXTHWG_POE_IPc_MCU_Type_dragonite_E;
+    // DEVUNITG_dev_list_TYP   					local_dev_list;
+    GT_U32      								dev_num;
+    EXTHWG_POE_ret_TYP                          driver_ret_val;
+    UINT_32                                     time_before, time_after;
+/*!****************************************************************************/
+/*!                      F U N C T I O N   L O G I C                          */
+/*!****************************************************************************/
+
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //     (DEBUGG_func_name_MAC(), "Start function");
+
+    // time_before = OSTIMG_time_get_in_ms_MAC();
+
+    if ((board_info_db_ptr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_POE_NOT_SUPPORTED_E) || (board_info_db_ptr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_LAST_E)){
+        // HALP_config_poe_fail_detected_handle_MAC("Invalid device hw type");
+        return poe_op_failed_E;
+    }
+
+    /*** Default download: assuming transport is IPc - 
+        1. Download FW to MCU (Dragonite or CM3)
+        2. Take the MCU out from reset
+        3. Init and config IPc for transport of messages between host and MCU ***/
+
+    /* get the dragonite dev id (which is the local PP dev id) */ 
+    // if (DEVUNITG_dev_list_get_local_devices(&local_dev_list) == FALSE){
+    //     OSSYSG_fatal_error("HALP_config_poe_download_fw - failed to get local devices");
+    // }
+    // DEVUNITG_dev_list_getnext(&local_dev_list, NULL, &dev_num);
+
+    dev_num = 0; /* to do ? */
+
+    if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
+        switch (board_info_db_ptr->data_PTR->poe.mcuType){
+        case EXTHWG_POE_IPc_MCU_Type_cm3_E:
+            exhw_mcuType = EXTHWG_POE_IPc_MCU_Type_cm3_E;
+            break;
+        case EXTHWG_POE_IPc_MCU_Type_dragonite_E:
+        default:
+            exhw_mcuType = EXTHWG_POE_IPc_MCU_Type_dragonite_E;
+            break;
+        }
+
+        driver_ret_val = EXTHWG_POE_IPc_init(exhw_mcuType, (GT_U8)dev_num);
+        
+    }
+    else if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
+        // driver_ret_val = EXTHWG_POE_DRG_init(TRUE, (GT_U8)dev_num);
+    }
+    else {
+        // OSIOG_printf("%s: unsupported poe_mcu_serial_channel_id [%d]\n", DEBUGG_func_name_MAC(), HALP_config_poe_device_db.hw_info.dragonite_info.poe_mcu_serial_channel_id);
+        // OSSYSG_fatal_error("HALP_config_poe_download_fw - failed to get supported mcu serial channel id");
+
+        return poe_op_failed_E;
+    }
+    if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
+
+        // OSIOG_printf("%s: Fail to load version. Fail in EXTHWG_POE_DRG_init\n", DEBUGG_func_name_MAC());
+    }
+
+    EXTHWG_POE_IPc_remove_FW_flag_loaded();
+
+// #ifndef _ROS_WM
+//     /* call to private host implementation */
+//     if (HOSTG_poe_special_configuration(HOSTG_poe_special_action_gpio_in_download_E) == FALSE){
+//         // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+//         //     (DEBUGG_func_name_MAC(), "HOSTG_poe_special_configuration failed, return fail");
+//         return poe_op_failed_E;
+//     }
+// #endif
+
+    // time_after = OSTIMG_time_get_in_ms_MAC();
+
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //     (DEBUGG_func_name_MAC(), "End function, Poe: init MCU version time %d", (time_after - time_before));
+    
+    return poe_op_ok_E;
+
+}
+
+/*****************************************************************************
+* FUNCTION NAME: HALP_config_poe_download_fw
+*
+* DESCRIPTION: 
+*      
+*
+*****************************************************************************/
+static poe_op_result_t HALP_config_poe_download_fw (
+    /*!     INPUTS:             */
+    void
+    /*!     INPUTS / OUTPUTS:   */
+    /*!     OUTPUTS:            */
+)
+{
+/*!****************************************************************************/
+/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
+/*!****************************************************************************/
+    EXTHWG_POE_IPc_MCU_Type_ENT                 exhw_mcuType=EXTHWG_POE_IPc_MCU_Type_dragonite_E;
+    EXTHWG_POE_ret_TYP                          driver_ret_val;
+    UINT_32                                     time_before, time_after, num_of_retries = 0, max_num_of_retries = 10;
+    //poe_device_operations_params_UNT poe_param; 
+    BOOLEAN                                     valid_firmware_exist = FALSE, version_ignore_flag = TRUE, expected_userbyte=FALSE;
+    BOOLEAN                                     latest_ver_exist = FALSE;
+#ifdef _ROS_WM
+    char c = 'X';
+#endif
+/*!****************************************************************************/
+/*!                      F U N C T I O N   L O G I C                          */
+/*!****************************************************************************/
+
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //     (DEBUGG_func_name_MAC(), "Start function");
+
+    // time_before = OSTIMG_time_get_in_ms_MAC();
+
+    // /* poe firmware is not ready, continue with regular flow */
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //             (DEBUGG_func_name_MAC(), "poe firmware will be downloaded");
+
+    switch (board_info_db_ptr->data_PTR->poe.mcuType) {
+        case PDL_POE_MCU_TYPE_CM3_E:
+            exhw_mcuType = EXTHWG_POE_IPc_MCU_Type_cm3_E;
+            break;
+        case PDL_POE_MCU_TYPE_DRAGONITE_E:
+        default:
+            exhw_mcuType = EXTHWG_POE_IPc_MCU_Type_dragonite_E;
+            break;
+    }
+
+    /* if we performed a valid perpetual restart then run firmware only if firmware is volatile */
+    if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
+        driver_ret_val = EXTHWG_POE_IPc_run_firmware(exhw_mcuType, board_info_db_ptr->data_PTR->poe.fwFileName);
+
+        // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+        //     (DEBUGG_func_name_MAC(), "run ipc firmware, driver_ret_val [%d]", driver_ret_val);
+    }
+    else if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
+        // driver_ret_val = EXTHWG_POE_DRG_run_firmware();
+
+        // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+        //     (DEBUGG_func_name_MAC(), "run dragonite firmware,  driver_ret_val [%d]", driver_ret_val);
+    }
+    else {
+        // OSIOG_printf("%s: unsupported poe_mcu_serial_channel_id [%d]\n", DEBUGG_func_name_MAC(), HALP_config_poe_device_db.hw_info.dragonite_info.poe_mcu_serial_channel_id);
+        return poe_op_failed_E;
+    }
+
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "finished loading FW file");
+
+    if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
+        
+        // SYSLOGG_log_fatal_error_text(RSG_component_HAL_E,
+        //     HALC_application_config_poe_E,
+        //     HALC_msgs_config_poe_invld_poe_oper_E,
+        //     "HALP_config_poe_download_fw: Fail to load version. Fail in EXTHWG_POE_DRG_run_firmware");
+    }
+    // time_after = OSTIMG_time_get_in_ms_MAC();
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "load Dragonite version time in ms: %d", (time_after - time_before));
+    
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //     (DEBUGG_func_name_MAC(), "!!!! PoE FW download completed, can execute vuart !!!!");
+
+    sleep(1);// HALP_config_poe_wait(HALP_config_poe_wait_692xx_DownloadFirmwareComplete_E);
+
+    // if (HALP_config_poe_get_system_status_validation[HALP_config_poe_get_dev_hw_type_MAC()] != NULL){
+    //     HALP_config_poe_get_system_status_validation[HALP_config_poe_get_dev_hw_type_MAC()](& valid_firmware_exist, & expected_userbyte);
+    // }
+
+    // /* for v3 - add delay to stop poe init error in stack mode when the device is forcefully disconnected from the power outlet */
+    // if(HALP_config_poe_get_dev_hw_type_MAC() == BOXG_poe_device_hw_type_v3_protocol_E) {
+    //     HALP_config_poe_wait(HALP_config_poe_wait_v3_DownloadFirmwareComplete_E);
+    // } 
+
+    // /* loop until we get a valid response from the poe firmware */
+    // /* we do this because sometimes it takes the firmware a while to load after running */
+    // while ((HALP_config_poe_dev_operation_no_fail_detect(HALP_config_poe_master_dev_num_CNS, poe_device_op_code_get_version_E, &poe_param) != poe_op_ok_E) && 
+    //        (num_of_retries <= max_num_of_retries)){
+        
+	// 	// DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "@@@ GET SW VERSION RETRY NUMBER: %d, (sleep for 1 second and retry)", num_of_retries);
+    //     num_of_retries++; 
+    //     OSTIMG_sleep(OSTIMG_ms_to_tick(1000));
+    // } 
+    
+	// // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "@@@ Total number of CM3 send/receive retries %d", num_of_retries);
+	
+    // /* fail detect will be thrown only when the max number of retries is reached */
+    // /* if we exceeded the max number of retries for trying to receive an answer from CM3/Dragonite, return failure */
+    // if (num_of_retries > max_num_of_retries) {
+    //     HALP_config_poe_fail_detected_handle_MAC("Failed to get SW version, reached max retry number");
+
+    //     /* firmware should be running properly, if not then restart */
+    //     HALP_config_poe_reload_after_invalid_init(DEBUGG_func_name_MAC(), "no response, reached max retry number", TRUE);
+    // }
+
+    // latest_ver_exist = HALP_config_poe_fw_is_lateset_version(poe_param);
+
+    // // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    // //     (DEBUGG_func_name_MAC(), "latest_ver_exist %d, valid_firmware_exist %d",
+    // //     latest_ver_exist, 
+    // //     valid_firmware_exist);
+
+    // // if (DEBUGG_is_active_MAC(HALP_config_poe_debug_version_ignore_flag)){
+    // //     version_ignore_flag = TRUE;
+    // //     DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    // //             (DEBUGG_func_name_MAC(),
+    // //             "********** set_download_sw. System is working in version_ignore mode **********");
+    // // }
+
+    // /* valid latest version */
+    // if ((valid_firmware_exist) && (latest_ver_exist)) {
+        
+    //     HALP_config_poe_config_factory_default_required = TRUE;
+
+    //     // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), 
+    //     //     "No need to download version. valid_firmware_exist %d latest_ver_exist %d", 
+    //     //     valid_firmware_exist, latest_ver_exist);
+    //     return poe_op_ok_E;
+    // }    
+    // else {
+    //     if (version_ignore_flag) {
+    //         // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //         //     (DEBUGG_func_name_MAC(),
+    //         //     "********** Avoid Fatal error. System is working in version_ignore mode **********");
+    //     }
+    //     else {
+    //         // SYSLOGG_log_fatal_error_uint32(RSG_component_HAL_E,
+    //         //     HALC_application_config_poe_E,
+    //         //     HALC_msgs_config_poe_invld_poe_version_E,
+    //         //     (UINT_32)poe_param.poe_version.poe_FwVersion.ver_num_64);
+    //     }
+    // }
+
+    // if (expected_userbyte)
+    //     HALP_config_poe_config_factory_default_required = FALSE;
+    // else
+    //     /* new sw require, no defaults */
+    //     HALP_config_poe_config_factory_default_required = TRUE;
+
+    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
+    //     (DEBUGG_func_name_MAC(), "End function, Poe: load MCU version time %d", (time_after - time_before));
+    
+    return poe_op_ok_E;
+
+}
+
 /**
  * @brief General initialize a for the shared memory protocol
  *
@@ -381,6 +646,11 @@ exit:
  *    error code is returned.
  */
 poe_op_result_t shared_memory_initialize() {
+    
+    HALP_config_poe_init_fw();
+
+    HALP_config_poe_download_fw();
+
     return poe_op_ok_E;
 }
 
@@ -466,6 +736,20 @@ poe_op_result_t poe_initialize(void) {
         goto exit;
     }
 
+    /* init shared memory */
+    result = shared_memory_initialize();
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to initialize shared memory");
+        goto exit;
+    }
+
+    /* set poe power banks */
+    result = poe_power_bank_initialize();
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to initialize power");
+        goto exit;
+    }
+
     /* set poe port matrix */
     result = poe_port_matrix_initialize();
     if(result != poe_op_ok_E) {
@@ -477,20 +761,6 @@ poe_op_result_t poe_initialize(void) {
     result = poe_port_standard_initialize();
     if(result != poe_op_ok_E) {
         LOG_ERROR("failed to initialize port standard");
-        goto exit;
-    }
-
-    /* set poe power banks */
-    result = poe_power_bank_initialize();
-    if(result != poe_op_ok_E) {
-        LOG_ERROR("failed to initialize power");
-        goto exit;
-    }
-
-    /* init shared memory */
-    result = shared_memory_initialize();
-    if(result != poe_op_ok_E) {
-        LOG_ERROR("failed to initialize shared memory");
         goto exit;
     }
 
@@ -596,21 +866,21 @@ bool poe_port_get_second_physical_index(uint32_t front_panel_index, uint32_t *ph
     return true;
 }
 
-/**
- * @brief Send/recieve data from the shared memory protocol
- *
- * @param[in] send true if writing data otherwise reading
- * @param[in] op_code operation code
- * @param[in] data_len data length
- * @param[out] data data
- * 
- * @return #true if operation is successful otherwise false
- *
- */
-bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_len, uint8_t *data) {
-    /* should be implemented in the IPC/shared memory logic */
-    return true;
-}
+// /**
+//  * @brief Send/recieve data from the shared memory protocol
+//  *
+//  * @param[in] send true if writing data otherwise reading
+//  * @param[in] op_code operation code
+//  * @param[in] data_len data length
+//  * @param[out] data data
+//  * 
+//  * @return #true if operation is successful otherwise false
+//  *
+//  */
+// bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_len, uint8_t *data) {
+//     /* should be implemented in the IPC/shared memory logic */
+//     return true;
+// }
 
 /**
  * @brief send/receive message to/from the poe firmware
