@@ -23,7 +23,8 @@
 #include <PDLIB/h/pdlib/init/pdlInit.h>
 #include <PDLIB/h/pdlib/lib/pdlLib.h>
 #include <h/utils/log.h>
-#include <h/ipc/ipc_drv.h>
+#include <h/sai/saipoe.h>
+#include <h/ipc_drv.h>
 
 static PDL_FEATURE_DATA_STC        *board_info_db_ptr;
 static XML_PARSER_ROOT_DESCRIPTOR_TYP   xml_root_id;
@@ -34,6 +35,14 @@ poe_v3_msg_sysPowerBank_STC power_bank_list = {0};
 /* lock critical sections when reading/writing */
 rwlock_excl_t lock;
 
+/**
+ * @brief Debug callback
+ * 
+ * @param[in] func_name_ptr function name pointer
+ * @param[in] format
+ * 
+ * @return void
+ */
 static void xpSaiPdlibDebugCallback(const char *func_name_ptr,
                                     const char *format, ...)
 {
@@ -46,6 +55,15 @@ static void xpSaiPdlibDebugCallback(const char *func_name_ptr,
     vsnprintf(&log[len], sizeof(log) - len, format, argptr);
 }
 
+/**
+ * @brief Uncompress callback
+ * 
+ * @param[in] archiveFileNamePtr archive file name pointer
+ * @param[out] xmlFileNamePtr xml; file name pointer
+ * @param[out] signatureFileNamePtr signature file name pointer
+ * 
+ * @return boolean
+ */
 static  BOOLEAN xpSaiPdlibXmlUncompressCallback(
     IN  char       *archiveFileNamePtr,
     OUT char       *xmlFileNamePtr,
@@ -82,14 +100,24 @@ static  BOOLEAN xpSaiPdlibXmlUncompressCallback(
  *                  for validation by pdlib
  */
 
+
+/**
+ * @brief XML signature callback
+ * 
+ * @param[in] xmlFileNamePtr xml file name pointer
+ * @param[in] signatureSize signature size
+ * @param[out] signaturePtr signature pointer
+ * 
+ * @return boolean
+ */
 static  BOOLEAN xpSaiPdlibgetXmlSignatureCallback(
     IN  char       *xmlFileNamePtr,
-    IN  UINT_32     signatureSize,
+    IN  int32_t     signatureSize,
     OUT UINT_8     *signaturePtr
 )
 {
     FILE *xml_fd;
-    UINT_32 file_size, i, len=0;
+    int32_t file_size, i, len=0;
     PDL_LIB_MD5_DIGEST_STC md5_digest;
 
     /*
@@ -136,6 +164,14 @@ static  BOOLEAN xpSaiPdlibgetXmlSignatureCallback(
     return TRUE;
 }
 
+/**
+ * @brief Get first entry from the database
+ * 
+ * @param[in] dbHandler DB handler
+ * @param[out] outEntryPtrPtr first entry
+ * 
+ * @return boolean
+ */
 bool board_info_db_get_first (
     /*!     INPUTS:             */
     PRV_PDLIB_DB_TYP  dbHandler,
@@ -144,13 +180,7 @@ bool board_info_db_get_first (
     void                    **outEntryPtrPtr
 )
 {
-/*!****************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!****************************************************************************/
     PDL_STATUS status;
-/*!****************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!****************************************************************************/
 
     status = prvPdlibDbGetFirst (dbHandler, outEntryPtrPtr);
 
@@ -166,6 +196,14 @@ bool board_info_db_get_first (
     return TRUE;
 }
 
+/**
+ * @brief Get next entry from the database
+ * 
+ * @param[in] dbHandler DB handler
+ * @param[out] outEntryPtrPtr next entry
+ * 
+ * @return boolean
+ */
 bool  board_info_db_get_next (
     /*!     INPUTS:             */
     PRV_PDLIB_DB_TYP  dbHandler,
@@ -175,13 +213,7 @@ bool  board_info_db_get_next (
     void                    **outEntryPtrPtr
 )
 {
-/*!****************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!****************************************************************************/
     PDL_STATUS status;
-/*!****************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!****************************************************************************/
     status = prvPdlibDbGetNext((PRV_PDLIB_DB_TYP)dbHandler, keyPtr, outEntryPtrPtr);
 
     if(status == PDL_OK) {
@@ -191,21 +223,23 @@ bool  board_info_db_get_next (
     return FALSE;
 }
 
+/**
+ * @brief Get number of entries from the database
+ * 
+ * @param[in] dbHandler DB handler
+ * @param[out] numOfEntriesPtr num of entries
+ * 
+ * @return boolean
+ */
 bool board_info_db_num_of_entries_get (
     /*!     INPUTS:             */
     PRV_PDLIB_DB_TYP  dbHandler,
     /*!     INPUTS / OUTPUTS:   */
     /*!     OUTPUTS:            */
-    UINT_32                *numOfEntriesPtr
+    int32_t                *numOfEntriesPtr
 )
 {
-/*!****************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!****************************************************************************/
     PDL_STATUS status;
-/*!****************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!****************************************************************************/
 
     status = prvPdlibDbGetNumOfEntries(dbHandler, numOfEntriesPtr);
 
@@ -375,41 +409,26 @@ exit:
     return result;
 }
 
-/*****************************************************************************
-* FUNCTION NAME: HALP_config_poe_init_fw
-*
-* DESCRIPTION: Initialize poe firmware and decide which init flow to perform
-*              Init flows: perpetual or regular
-*
-*****************************************************************************/
-static poe_op_result_t HALP_config_poe_init_fw (
+/**
+ * @brief init poe firmware
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+static poe_op_result_t poe_init_fw (
     /*!     INPUTS:             */
     void
     /*!     INPUTS / OUTPUTS:   */
     /*!     OUTPUTS:            */
 )
 {
-/*!****************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!****************************************************************************/
-    // BOXG_poe_device_type_ENT                    poe_dev_hw_type;
-    // poe_op_result_ENT               op_result;
+
     EXTHWG_POE_IPc_MCU_Type_ENT                 exhw_mcuType=EXTHWG_POE_IPc_MCU_Type_dragonite_E;
-    // DEVUNITG_dev_list_TYP   					local_dev_list;
     GT_U32      								dev_num;
     EXTHWG_POE_ret_TYP                          driver_ret_val;
-    UINT_32                                     time_before, time_after;
-/*!****************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!****************************************************************************/
-
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //     (DEBUGG_func_name_MAC(), "Start function");
-
-    // time_before = OSTIMG_time_get_in_ms_MAC();
+    int32_t                                     time_before, time_after;
 
     if ((board_info_db_ptr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_POE_NOT_SUPPORTED_E) || (board_info_db_ptr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_LAST_E)){
-        // HALP_config_poe_fail_detected_handle_MAC("Invalid device hw type");
         return poe_op_failed_E;
     }
 
@@ -417,12 +436,8 @@ static poe_op_result_t HALP_config_poe_init_fw (
         1. Download FW to MCU (Dragonite or CM3)
         2. Take the MCU out from reset
         3. Init and config IPc for transport of messages between host and MCU ***/
-
     /* get the dragonite dev id (which is the local PP dev id) */ 
-    // if (DEVUNITG_dev_list_get_local_devices(&local_dev_list) == FALSE){
-    //     OSSYSG_fatal_error("HALP_config_poe_download_fw - failed to get local devices");
-    // }
-    // DEVUNITG_dev_list_getnext(&local_dev_list, NULL, &dev_num);
+
 
     dev_num = 0; /* to do ? */
 
@@ -441,77 +456,42 @@ static poe_op_result_t HALP_config_poe_init_fw (
         
     }
     else if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
-        // driver_ret_val = EXTHWG_POE_DRG_init(TRUE, (GT_U8)dev_num);
+        // not supported
     }
     else {
-        // OSIOG_printf("%s: unsupported poe_mcu_serial_channel_id [%d]\n", DEBUGG_func_name_MAC(), HALP_config_poe_device_db.hw_info.dragonite_info.poe_mcu_serial_channel_id);
-        // OSSYSG_fatal_error("HALP_config_poe_download_fw - failed to get supported mcu serial channel id");
-
         return poe_op_failed_E;
     }
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
-
-        // OSIOG_printf("%s: Fail to load version. Fail in EXTHWG_POE_DRG_init\n", DEBUGG_func_name_MAC());
+        return poe_op_failed_E;
     }
 
     EXTHWG_POE_IPc_remove_FW_flag_loaded();
-
-// #ifndef _ROS_WM
-//     /* call to private host implementation */
-//     if (HOSTG_poe_special_configuration(HOSTG_poe_special_action_gpio_in_download_E) == FALSE){
-//         // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-//         //     (DEBUGG_func_name_MAC(), "HOSTG_poe_special_configuration failed, return fail");
-//         return poe_op_failed_E;
-//     }
-// #endif
-
-    // time_after = OSTIMG_time_get_in_ms_MAC();
-
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //     (DEBUGG_func_name_MAC(), "End function, Poe: init MCU version time %d", (time_after - time_before));
     
     return poe_op_ok_E;
-
 }
 
-/*****************************************************************************
-* FUNCTION NAME: HALP_config_poe_download_fw
-*
-* DESCRIPTION: 
-*      
-*
-*****************************************************************************/
-static poe_op_result_t HALP_config_poe_download_fw (
+/**
+ * @brief Download poe firmware
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+static poe_op_result_t poe_download_fw (
     /*!     INPUTS:             */
     void
     /*!     INPUTS / OUTPUTS:   */
     /*!     OUTPUTS:            */
 )
 {
-/*!****************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!****************************************************************************/
+
     EXTHWG_POE_IPc_MCU_Type_ENT                 exhw_mcuType=EXTHWG_POE_IPc_MCU_Type_dragonite_E;
     EXTHWG_POE_ret_TYP                          driver_ret_val;
-    UINT_32                                     time_before, time_after, num_of_retries = 0, max_num_of_retries = 10;
-    //poe_device_operations_params_UNT poe_param; 
+    int32_t                                     time_before, time_after, num_of_retries = 0, max_num_of_retries = 10;
     BOOLEAN                                     valid_firmware_exist = FALSE, version_ignore_flag = TRUE, expected_userbyte=FALSE;
     BOOLEAN                                     latest_ver_exist = FALSE;
 #ifdef _ROS_WM
     char c = 'X';
 #endif
-/*!****************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!****************************************************************************/
-
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //     (DEBUGG_func_name_MAC(), "Start function");
-
-    // time_before = OSTIMG_time_get_in_ms_MAC();
-
-    // /* poe firmware is not ready, continue with regular flow */
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //             (DEBUGG_func_name_MAC(), "poe firmware will be downloaded");
 
     switch (board_info_db_ptr->data_PTR->poe.mcuType) {
         case PDL_POE_MCU_TYPE_CM3_E:
@@ -526,114 +506,20 @@ static poe_op_result_t HALP_config_poe_download_fw (
     /* if we performed a valid perpetual restart then run firmware only if firmware is volatile */
     if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
         driver_ret_val = EXTHWG_POE_IPc_run_firmware(exhw_mcuType, board_info_db_ptr->data_PTR->poe.fwFileName);
-
-        // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-        //     (DEBUGG_func_name_MAC(), "run ipc firmware, driver_ret_val [%d]", driver_ret_val);
     }
     else if (board_info_db_ptr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
-        // driver_ret_val = EXTHWG_POE_DRG_run_firmware();
-
-        // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-        //     (DEBUGG_func_name_MAC(), "run dragonite firmware,  driver_ret_val [%d]", driver_ret_val);
+        // not supported
     }
     else {
-        // OSIOG_printf("%s: unsupported poe_mcu_serial_channel_id [%d]\n", DEBUGG_func_name_MAC(), HALP_config_poe_device_db.hw_info.dragonite_info.poe_mcu_serial_channel_id);
         return poe_op_failed_E;
     }
 
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "finished loading FW file");
 
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
-        
-        // SYSLOGG_log_fatal_error_text(RSG_component_HAL_E,
-        //     HALC_application_config_poe_E,
-        //     HALC_msgs_config_poe_invld_poe_oper_E,
-        //     "HALP_config_poe_download_fw: Fail to load version. Fail in EXTHWG_POE_DRG_run_firmware");
+        return poe_op_failed_E;
     }
-    // time_after = OSTIMG_time_get_in_ms_MAC();
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "load Dragonite version time in ms: %d", (time_after - time_before));
-    
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //     (DEBUGG_func_name_MAC(), "!!!! PoE FW download completed, can execute vuart !!!!");
 
-    sleep(1);// HALP_config_poe_wait(HALP_config_poe_wait_692xx_DownloadFirmwareComplete_E);
-
-    // if (HALP_config_poe_get_system_status_validation[HALP_config_poe_get_dev_hw_type_MAC()] != NULL){
-    //     HALP_config_poe_get_system_status_validation[HALP_config_poe_get_dev_hw_type_MAC()](& valid_firmware_exist, & expected_userbyte);
-    // }
-
-    // /* for v3 - add delay to stop poe init error in stack mode when the device is forcefully disconnected from the power outlet */
-    // if(HALP_config_poe_get_dev_hw_type_MAC() == BOXG_poe_device_hw_type_v3_protocol_E) {
-    //     HALP_config_poe_wait(HALP_config_poe_wait_v3_DownloadFirmwareComplete_E);
-    // } 
-
-    // /* loop until we get a valid response from the poe firmware */
-    // /* we do this because sometimes it takes the firmware a while to load after running */
-    // while ((HALP_config_poe_dev_operation_no_fail_detect(HALP_config_poe_master_dev_num_CNS, poe_device_op_code_get_version_E, &poe_param) != poe_op_ok_E) && 
-    //        (num_of_retries <= max_num_of_retries)){
-        
-	// 	// DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "@@@ GET SW VERSION RETRY NUMBER: %d, (sleep for 1 second and retry)", num_of_retries);
-    //     num_of_retries++; 
-    //     OSTIMG_sleep(OSTIMG_ms_to_tick(1000));
-    // } 
-    
-	// // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), "@@@ Total number of CM3 send/receive retries %d", num_of_retries);
-	
-    // /* fail detect will be thrown only when the max number of retries is reached */
-    // /* if we exceeded the max number of retries for trying to receive an answer from CM3/Dragonite, return failure */
-    // if (num_of_retries > max_num_of_retries) {
-    //     HALP_config_poe_fail_detected_handle_MAC("Failed to get SW version, reached max retry number");
-
-    //     /* firmware should be running properly, if not then restart */
-    //     HALP_config_poe_reload_after_invalid_init(DEBUGG_func_name_MAC(), "no response, reached max retry number", TRUE);
-    // }
-
-    // latest_ver_exist = HALP_config_poe_fw_is_lateset_version(poe_param);
-
-    // // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    // //     (DEBUGG_func_name_MAC(), "latest_ver_exist %d, valid_firmware_exist %d",
-    // //     latest_ver_exist, 
-    // //     valid_firmware_exist);
-
-    // // if (DEBUGG_is_active_MAC(HALP_config_poe_debug_version_ignore_flag)){
-    // //     version_ignore_flag = TRUE;
-    // //     DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    // //             (DEBUGG_func_name_MAC(),
-    // //             "********** set_download_sw. System is working in version_ignore mode **********");
-    // // }
-
-    // /* valid latest version */
-    // if ((valid_firmware_exist) && (latest_ver_exist)) {
-        
-    //     HALP_config_poe_config_factory_default_required = TRUE;
-
-    //     // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)(DEBUGG_func_name_MAC(), 
-    //     //     "No need to download version. valid_firmware_exist %d latest_ver_exist %d", 
-    //     //     valid_firmware_exist, latest_ver_exist);
-    //     return poe_op_ok_E;
-    // }    
-    // else {
-    //     if (version_ignore_flag) {
-    //         // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //         //     (DEBUGG_func_name_MAC(),
-    //         //     "********** Avoid Fatal error. System is working in version_ignore mode **********");
-    //     }
-    //     else {
-    //         // SYSLOGG_log_fatal_error_uint32(RSG_component_HAL_E,
-    //         //     HALC_application_config_poe_E,
-    //         //     HALC_msgs_config_poe_invld_poe_version_E,
-    //         //     (UINT_32)poe_param.poe_version.poe_FwVersion.ver_num_64);
-    //     }
-    // }
-
-    // if (expected_userbyte)
-    //     HALP_config_poe_config_factory_default_required = FALSE;
-    // else
-    //     /* new sw require, no defaults */
-    //     HALP_config_poe_config_factory_default_required = TRUE;
-
-    // DEBUGG_log_MAC(HALP_config_poe_debug_init_flag)
-    //     (DEBUGG_func_name_MAC(), "End function, Poe: load MCU version time %d", (time_after - time_before));
+    sleep(1);// poe_wait(poe_wait_692xx_DownloadFirmwareComplete_E);
     
     return poe_op_ok_E;
 
@@ -647,9 +533,9 @@ static poe_op_result_t HALP_config_poe_download_fw (
  */
 poe_op_result_t shared_memory_initialize() {
     
-    HALP_config_poe_init_fw();
+    poe_init_fw();
 
-    HALP_config_poe_download_fw();
+    poe_download_fw();
 
     return poe_op_ok_E;
 }
@@ -906,15 +792,11 @@ poe_op_result_t poe_v3_send_receive_msg (
     /*!     OUTPUTS:            */
 )
 {
-/*!****************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!****************************************************************************/
     uint8_t  *buf_ptr;
     bool send=(direction==poe_v3_msg_dir_get_CNS)?false:true;
     poe_v3_msg_opCode_UNT op_code;
-/*!****************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!****************************************************************************/   
+
+
     poe_v3_set_msg_opCode_MAC(op_code, msg_level, direction, msg_id);
     buf_ptr = (uint8_t*)data_ptr;
     if (true != EXTHWG_POE_IPc_send_recieve_msg(send, op_code.op_code_num_32, data_len, buf_ptr)) {
@@ -1067,8 +949,8 @@ poe_op_result_t poe_power_bank_initialize() {
  */
 poe_op_result_t poe_dev_get_total_power (
     /*!     INPUTS:             */
-    UINT_32 poe_dev_num, 
-    UINT_32 *total_power_mw_ptr
+    int32_t poe_dev_num, 
+    int32_t *total_power_mw_ptr
 )
 {
     poe_v3_msg_sysPowerConsumption_STC power_consumption_params;
@@ -1099,8 +981,8 @@ poe_op_result_t poe_dev_get_total_power (
  */
 poe_op_result_t poe_dev_get_power_consumption (
     /*!     INPUTS:             */
-    UINT_32 poe_dev_num, 
-    UINT_32 *power_consumption_mw_ptr
+    int32_t poe_dev_num, 
+    int32_t *power_consumption_mw_ptr
 )
 {
     poe_v3_msg_sysPowerConsumption_STC power_consumption_params;
@@ -1139,7 +1021,7 @@ poe_op_result_t poe_dev_get_power_consumption (
  */
 poe_op_result_t poe_dev_get_version (
     /*!     INPUTS:             */
-    UINT_32 poe_dev_num, 
+    int32_t poe_dev_num, 
     char *version_ptr
 )
 {
@@ -1254,6 +1136,226 @@ poe_op_result_t poe_dev_set_power_limit_mode (
 }
 
 /**
+ * @brief Get the PSE software version
+ * 
+ * @param[in] poe_pse_num pse number
+ * @param[out] version_ptr pse software version
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_pse_get_software_version (
+    /*!     INPUTS:             */
+    int32_t poe_pse_num, 
+    char *version_ptr
+)
+{
+    poe_v3_msg_sysSystemVersion_STC *version_params_ptr;
+    poe_op_result_t result; 
+
+    if(version_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(version_params_ptr, 0, sizeof(poe_v3_msg_sysSystemVersion_STC));
+    memset(version_params_ptr->pse_version_data, 0xFF, sizeof(version_params_ptr->pse_version_data));
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_systemVersion_CNS, sizeof(*version_params_ptr), (uint8_t*)version_params_ptr);
+
+    if(result == poe_op_ok_E) {
+        snprintf (version_ptr, 20, "%d", version_params_ptr->pse_version_data[poe_pse_num].pseSwVersion);
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Get the PSE hardware version
+ * 
+ * @param[in] poe_pse_num pse number
+ * @param[out] version_ptr pse software version
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_pse_get_hardware_version (
+    /*!     INPUTS:             */
+    int32_t poe_pse_num, 
+    char *version_ptr
+)
+{
+    poe_v3_msg_sysSystemVersion_STC *version_params_ptr;
+    poe_op_result_t result;
+    char prefix[12] ={0};
+
+    if(version_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(version_params_ptr, 0, sizeof(poe_v3_msg_sysSystemVersion_STC));
+    memset(version_params_ptr->pse_version_data, 0xFF, sizeof(version_params_ptr->pse_version_data));
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_systemVersion_CNS, sizeof(*version_params_ptr), (uint8_t*)version_params_ptr);
+
+    if(result == poe_op_ok_E) {
+        switch(version_params_ptr->pse_version_data[poe_pse_num].pseHwVersion) {
+            case poe_v3_dev_hw_version_LTC4291_CNS:
+                strcat(prefix, "LTC4291"); /* bt */
+                break;     
+            default:
+                result = poe_op_failed_E;
+                break;
+        }
+
+        snprintf(version_ptr, 20, "%s - 0x%X", prefix, version_params_ptr->pse_version_data[poe_pse_num].pseHwVersion<<8 | version_params_ptr->pse_version_data[poe_pse_num].pseSwVersion);
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Get the PSE temperature
+ * 
+ * @param[in] poe_pse_num pse number
+ * @param[out] temperature pse temperature
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_pse_get_temperature (
+    /*!     INPUTS:             */
+    int32_t poe_pse_num, 
+    int16_t *temperature_ptr
+)
+{
+    poe_v3_msg_sysPseTemperature_STC temperature_params;
+    poe_op_result_t result; 
+
+    if(temperature_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memcpy(temperature_params.pse_temp_swap, 0, sizeof(temperature_params.pse_temp_swap));
+
+    poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_pseTemperature_CNS, sizeof(temperature_params), (uint8_t*)&temperature_params);
+
+    if(result == poe_op_ok_E) {
+        *temperature_ptr = swap16(temperature_params.pse_temp_swap[poe_pse_num]);
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Get the PSE status
+ * 
+ * @param[in] poe_pse_num pse number
+ * @param[out] *status pse status
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_pse_get_status (
+    /*!     INPUTS:             */
+    int32_t poe_pse_num, 
+    int16_t *status_ptr
+)
+{
+    poe_v3_msg_sysPseStatus_STC system_status_params;
+    poe_op_result_t result;
+
+    /* convert v3 poe pse status values to sai */
+    sai_poe_pse_status_t convert_status_to_sai[]={
+        SAI_POE_PSE_STATUS_TYPE_NOT_PRESENT,
+        SAI_POE_PSE_STATUS_TYPE_ACTIVE,
+        SAI_POE_PSE_STATUS_TYPE_FAIL
+    };
+
+    if(status_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(&system_status_params, 0, sizeof(system_status_params));
+    poe_v3_send_receive_msg(poe_v3_msg_level_system_CNS, poe_v3_msg_dir_get_CNS, poe_v3_sys_msg_pseStatus_CNS, sizeof(system_status_params), (uint8_t*)&system_status_params);
+
+    if(result == poe_op_ok_E) {
+        if (system_status_params.pse_status[poe_pse_num] == poe_v3_pseStatus_notPresent_CNS || 
+            system_status_params.pse_status[poe_pse_num] > poe_v3_pseStatus_i2cFailure_CNS)
+            *status_ptr = SAI_POE_PSE_STATUS_TYPE_NOT_PRESENT;
+        else {
+            *status_ptr = convert_status_to_sai[system_status_params.pse_status[poe_pse_num]];
+        }
+    }
+    else {
+        LOG_ERROR("failed to get data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief get poe port enable/disable state
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[out] enable enable/disable
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_get_port_standard (
+    uint32_t front_panel_index,
+    bool *port_standard_ptr
+)
+{
+    poe_op_result_t result;
+
+    if(port_standard_ptr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return poe_op_failed_E;
+    }
+
+    rwlock_excl_acquire(&lock);  
+
+    *port_standard_ptr = poe_get_port_poe_hw_type(front_panel_index);
+
+    if(*port_standard_ptr == poe_port_hw_type_invalid_E) {
+        LOG_ERROR("failed to get port standard");
+        result = poe_op_failed_E;
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
  * @brief Set enable/disable on poe port
  * 
  * @param[in] front_panel_index front panel index
@@ -1298,13 +1400,13 @@ poe_op_result_t poe_port_set_admin_enable (
  */
 poe_op_result_t poe_port_get_admin_enable (
     uint32_t front_panel_index,
-    bool *enable
+    bool *enable_ptr
 )
 {
     poe_v3_msg_portEnable_STC   port_params;
     poe_op_result_t result;
 
-    if(enable == NULL) {
+    if(enable_ptr == NULL) {
         LOG_ERROR("invalid pointer");
         return poe_op_failed_E;
     }
@@ -1317,7 +1419,251 @@ poe_op_result_t poe_port_get_admin_enable (
     result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_get_CNS, poe_v3_port_msg_portEnable_CNS, sizeof(port_params), (uint8_t*)&port_params);
 
     if(result == poe_op_ok_E) {
-        *enable = port_params.port_admin_enable_disable;
+        *enable_ptr = port_params.port_admin_enable_disable;
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Set power limit on poe port
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[in] power_limit power limit
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_set_power_limit (
+    uint32_t front_panel_index,
+    const uint32_t power_limit
+)
+{
+    poe_v3_msg_portPowerLimit_STC   power_limit_params;
+    poe_op_result_t result; 
+
+    rwlock_excl_acquire(&lock); 
+
+    power_limit_params.logic_port_num = (UINT_8)front_panel_index;
+    power_limit_params.powerLimit_mw_swap = swap32(power_limit);
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_set_CNS, poe_v3_port_msg_portPowerLimit_CNS, sizeof(power_limit_params), (uint8_t*)&power_limit_params);
+
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to set data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Set power limit on poe port
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[in] power_limit power limit
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_get_power_limit (
+    uint32_t front_panel_index,
+    uint32_t *power_limit_ptr
+)
+{
+    poe_v3_msg_portPowerLimit_STC   power_limit_params;
+    poe_op_result_t result; 
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(&power_limit_params, 0, sizeof(power_limit_params));
+    power_limit_params.logic_port_num = (UINT_8)front_panel_index;
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_get_CNS, poe_v3_port_msg_portPowerLimit_CNS, sizeof(power_limit_params), (uint8_t*)&power_limit_params);
+
+    if(result == poe_op_ok_E) {
+        *power_limit_ptr = swap32(power_limit_params.powerLimit_mw_swap);
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Set power limit on poe port
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[in] power_limit power limit
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_set_power_priority (
+    uint32_t front_panel_index,
+    const uint32_t power_priority
+)
+{
+    poe_v3_msg_portPriority_STC port_priority_params;
+    poe_op_result_t result; 
+
+    rwlock_excl_acquire(&lock); 
+
+    port_priority_params.logic_port_num = (UINT_8)front_panel_index;
+    port_priority_params.portPriority = power_priority;
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_set_CNS, poe_v3_port_msg_portEnable_CNS, sizeof(port_priority_params), (uint8_t*)&port_priority_params);
+
+    if(result != poe_op_ok_E) {
+        LOG_ERROR("failed to set data");
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+/**
+ * @brief Set power consumption information on poe port (detailed)
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[in] power_consumption_ptr power limit
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_get_power_consumption (
+    uint32_t front_panel_index,
+    sai_poe_port_power_consumption_t *power_consumption_ptr
+)
+{
+    poe_v3_msg_portBtPowerConsumInfo_STC power_consumption_info;
+    poe_op_result_t result; 
+
+    /* convert v3 poe active channel values to sai */
+    sai_poe_port_active_channel_type_t convert_status_to_sai[]={
+        0xFF,
+        SAI_POE_PORT_ACTIVE_CHANNEL_TYPE_A,
+        SAI_POE_PORT_ACTIVE_CHANNEL_TYPE_B,
+        SAI_POE_PORT_ACTIVE_CHANNEL_TYPE_A_AND_B
+    };
+
+    /* convert v3 poe class method values to sai */
+    sai_poe_port_class_method_type_t convert_class_method_to_sai[]={
+        0xFF,
+        SAI_POE_PORT_CLASS_METHOD_TYPE_REGULAR,
+        SAI_POE_PORT_CLASS_METHOD_TYPE_AUTO_CLASS,
+    };
+
+    /* convert v3 poe signature type values to sai */
+    sai_poe_port_signature_type_t convert_signature_type_to_sai[]={
+        0xFF,
+        SAI_POE_PORT_SIGNATURE_TYPE_SINGLE,
+        SAI_POE_PORT_SIGNATURE_TYPE_DUAL
+    };
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(&power_consumption_info, 0, sizeof(power_consumption_info));
+    power_consumption_info.logic_port_num = (UINT_8)front_panel_index;
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_get_CNS, poe_v3_port_msg_powerConsumInfo_CNS, sizeof(power_consumption_info), (uint8_t*)&power_consumption_info);
+
+    if(result == poe_op_ok_E) {
+        power_consumption_ptr->active_channel = convert_status_to_sai[power_consumption_info.active_channel];
+        power_consumption_ptr->voltage = swap32(power_consumption_info.volt_v_swap);
+        power_consumption_ptr->current = swap32(power_consumption_info.current_ma_swap);
+        power_consumption_ptr->consumption = swap32(power_consumption_info.consump_mw_swap);
+        power_consumption_ptr->signature_type = convert_signature_type_to_sai[swap32(power_consumption_info.signature_type_swap)];
+        power_consumption_ptr->class_method = convert_class_method_to_sai[swap32(power_consumption_info.class_method_swap)];
+        power_consumption_ptr->measured_class_a = (uint8_t)power_consumption_info.measured_class_a_swap;
+        power_consumption_ptr->assigned_class_a = (uint8_t)power_consumption_info.assigned_class_a_swap;
+        power_consumption_ptr->measured_class_b = (uint8_t)power_consumption_info.measured_class_b_swap;
+        power_consumption_ptr->assigned_class_b = (uint8_t)power_consumption_info.assigned_class_b_swap;
+    }
+
+    rwlock_excl_release(&lock);
+
+    return result;
+}
+
+sai_poe_port_status_t port_hw_status_to_detection_status(port_status)
+{
+    sai_poe_port_status_t detection_status = SAI_POE_PORT_STATUS_TYPE_OFF;
+
+    switch (port_status) {                                                             
+        case poe_v3_port_status_off_inDetection_CNS:                  
+        case poe_v3_port_status_off_CapDetInvSig_CNS:               
+            detection_status = SAI_POE_PORT_STATUS_TYPE_SEARCHING;       
+            break;                                                                      
+        case poe_v3_port_status_on_ResDetect_CNS:                         
+        case poe_v3_port_status_on_CapDetect_CNS:                         
+        case poe_v3_port_status_on_4Pair_CNS:
+        case poe_v3_port_status_on_NonStd_BTdevice_CNS:                        
+            detection_status = SAI_POE_PORT_STATUS_TYPE_DELIVERING_POWER; 
+            break;                                                                      
+        case poe_v3_port_status_off_UserDisable_CNS:                      
+            detection_status = SAI_POE_PORT_STATUS_TYPE_OFF;        
+            break;                                                                                                                                                                                                     
+        default:                                                                        
+            detection_status = SAI_POE_PORT_STATUS_TYPE_FAULT;      
+            break; 
+    }
+
+    return detection_status;
+}                                                                
+
+/**
+ * @brief Set status of the poe port
+ * 
+ * @param[in] front_panel_index front panel index
+ * @param[in] status_ptr port status
+ * 
+ * @return #poe_op_ok_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+poe_op_result_t poe_port_get_status (
+    uint32_t front_panel_index,
+    uint32_t *status_ptr
+)
+{
+    poe_v3_msg_portStatus_STC port_status_params;
+    poe_op_result_t result;
+    poe_v3_port_status_TYP   port_status_a;
+    poe_v3_port_status_TYP   port_status_b;
+    sai_poe_port_status_t    detection_status_a;
+    sai_poe_port_status_t    detection_status_b;
+    poe_port_hw_type_t hw_type;
+
+    rwlock_excl_acquire(&lock); 
+
+    memset(&port_status_params, 0, sizeof(port_status_params));
+    port_status_params.logic_port_num = (UINT_8)front_panel_index;
+
+    result = poe_v3_send_receive_msg(poe_v3_msg_level_port_CNS, poe_v3_msg_dir_get_CNS, poe_v3_port_msg_portStatus_CNS, sizeof(port_status_params), (uint8_t*)&port_status_params);
+
+    /* convert specific hw status, to generic output: off/delivering power/searching/fault */
+    if(result == poe_op_ok_E) {
+        hw_type = poe_get_port_poe_hw_type(front_panel_index);
+        /* if hw type is not bt, get the alt a status */
+        if((hw_type != poe_port_hw_type_bt_type3_E) && (hw_type != poe_port_hw_type_bt_type4_E)) {
+            *status_ptr = port_hw_status_to_detection_status(port_status_params.port_status_a);
+        }
+        {
+            detection_status_a = port_hw_status_to_detection_status(port_status_params.port_status_a);
+            detection_status_b = port_hw_status_to_detection_status(port_status_params.port_status_b);
+
+            if(detection_status_a == detection_status_b) {
+                *status_ptr = detection_status_a;
+            }
+            else {
+                *status_ptr = SAI_POE_PORT_STATUS_TYPE_FAULT;
+            
+            }
+        }
     }
 
     rwlock_excl_release(&lock);

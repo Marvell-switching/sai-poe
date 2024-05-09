@@ -470,13 +470,16 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
         switch (attr_list[i].id)
         {
         case SAI_POE_PSE_ATTR_PSE_SOFTWARE_VERSION:
-            result = poe_port_set_admin_enable(*internal_pse_id_ptr, &(attr_list[i].value));
+            result = poe_pse_get_software_version(*internal_pse_id_ptr, &(attr_list[i].value.chardata));
             break;
-        case SAI_POE_PSE_ATTR_PSE_HARDWARE_VERSION:
+        case SAI_POE_PSE_ATTR_HARDWARE_VERSION:
+            result = poe_pse_get_hardware_version(*internal_pse_id_ptr, &(attr_list[i].value.chardata));
             break;
         case SAI_POE_PSE_ATTR_TEMPERATURE:
+            result = poe_pse_get_temperature(*internal_pse_id_ptr, &(attr_list[i].value.s16));
             break;
-        case SAI_POE_PSE_ATTR_PSE_STATUS:
+        case SAI_POE_PSE_ATTR_STATUS:
+            result = poe_pse_get_status(*internal_pse_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
             break;
@@ -575,18 +578,14 @@ static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In
 
     switch (attr->id)
     {
-    case SAI_POE_PORT_ATTR_STANDARD:
-        break;
     case SAI_POE_PORT_ATTR_ADMIN_ENABLED_STATE:
         result = poe_port_set_admin_enable(*internal_port_id_ptr, attr->value.booldata);
         break;
     case SAI_POE_PORT_ATTR_POWER_LIMIT:
+        result = poe_port_set_power_limit(*internal_port_id_ptr, attr->value.u32);
         break;
     case SAI_POE_PORT_ATTR_POWER_PRIORITY:
-        break;
-    case SAI_POE_PORT_ATTR_CONSUMPTION:
-        break;
-    case SAI_POE_PORT_ATTR_STATUS:
+        result = poe_port_set_power_priority(*internal_port_id_ptr, attr->value.s32);
         break;
     default:
         break;
@@ -628,17 +627,19 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
         switch (attr_list[i].id)
         {
         case SAI_POE_PORT_ATTR_STANDARD:
+            result = poe_port_get_port_standard(*internal_port_id_ptr, &(attr_list[i].value.s32));
             break;
         case SAI_POE_PORT_ATTR_ADMIN_ENABLED_STATE:
             result = poe_port_get_admin_enable(*internal_port_id_ptr, &(attr_list[i].value.booldata));
             break;
         case SAI_POE_PORT_ATTR_POWER_LIMIT:
-            break;
-        case SAI_POE_PORT_ATTR_POWER_PRIORITY:
+            result = poe_port_get_power_limit(*internal_port_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_PORT_ATTR_CONSUMPTION:
+            result = poe_port_get_power_consumption(*internal_port_id_ptr, &(attr_list[i].value.portpowerconsumption));
             break;
         case SAI_POE_PORT_ATTR_STATUS:
+            result = poe_port_get_status(*internal_port_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
             break;

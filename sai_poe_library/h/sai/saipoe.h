@@ -210,7 +210,7 @@ typedef enum _sai_poe_pse_attr_t
      * @type char
      * @flags READ_ONLY
      */
-    SAI_POE_PSE_ATTR_PSE_HARDWARE_VERSION,
+    SAI_POE_PSE_ATTR_HARDWARE_VERSION,
 
     /**
      * @brief Temperature (in Celsius) of the PSE
@@ -226,7 +226,7 @@ typedef enum _sai_poe_pse_attr_t
      * @type sai_poe_pse_status_t
      * @flags READ_ONLY
      */
-    SAI_POE_PSE_ATTR_PSE_STATUS,
+    SAI_POE_PSE_ATTR_STATUS,
 
     /**
      * @brief End of attributes
