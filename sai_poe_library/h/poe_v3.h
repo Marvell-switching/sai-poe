@@ -21,477 +21,474 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <h/sai/saitypes.h>
 
 typedef struct poe_object_id_t {
     uint32_t id;
     uint32_t object_type;
 } poe_object_id_t;
 
+typedef struct poeObjectId {
+    uint32_t id;
+    uint32_t objecte;
+} poeObjectId;
+
 /* status */
 typedef enum {
-    poe_op_ok_E = 0,
-    poe_op_failed_E,
-    poe_op_not_supported_E,
-} poe_op_result_t;
+    poeOpOk = 0,
+    poeOpFailed,
+    poeOpNotSupported,
+} poeOpResult;
 
 typedef enum {
-    poe_port_hw_type_af_E = 0,
-    poe_port_hw_type_at_E,
-    poe_port_hw_type_60W_E,
-    poe_port_hw_type_bt_type3_E,
-    poe_port_hw_type_bt_type4_E,
+    poePortHwTypeAf = 0,
+    poePortHwTypeAt,
+    poePortHwType60W,
+    poePortHwTypeBt3,
+    poePortHwTypeBt4,
     /* must be last */
-    poe_port_hw_type_invalid_E
-} poe_port_hw_type_t;
+    poePortHwTypeInvalid
+} poePortHwType;
 
-typedef struct _poe_power_management_unit_db_STCT {
+typedef struct poePowerManagementUnitDb {
     /* set */
-    uint32_t                           main_pse_power_mw;
-    uint32_t                           main_pse_consumption_power_mw;
-    uint32_t                           calculated_power_mw;
-    uint32_t                           available_power_mw;
-} poe_power_management_unit_db_STC;
+    uint32_t mainPsePowerMw;
+    uint32_t mainPseConsumptionPowerMw;
+    uint32_t calculatedPowerMw;
+    uint32_t availablePowerMw;
+} poePowerManagementUnitDb;
 
-typedef uint32_t UnitType_TYP;
-#define unitType_None_CNS   	0
-#define unitType_PSE_CNS   	1
-#define unitType_PD_CNS   	2
-#define unitType_PSE_PD_CNS   3
+typedef uint32_t Unite;
+#define UniteNone 0
+#define UnitePse 1
+#define UnitePd 2
+#define UnitePsePd 3
 
-typedef uint8_t powerLimitMode_TYP;
-#define powerLimitMode_port_CNS  0
-#define powerLimitMode_class_CNS 1
+typedef uint8_t PowerLimitMode;
+#define PowerLimitModePort 0
+#define PowerLimitModeClass 1
 
-typedef struct poe_device_db_t {
-    uint32_t                                       device_id;
-    uint32_t                                       total_power;
-    uint32_t                                       power_consumption;
-    char                                          *version;
-    powerLimitMode_TYP                             power_limit_mode;
-    uint32_t                                       allocated_power;
-    poe_power_management_unit_db_STC               power_management;                                                     
-    UnitType_TYP                                   unit_type;
-} poe_device_db_t;
+typedef struct poeDeviceDb {
+    uint32_t deviceId;
+    uint32_t totalPower;
+    uint32_t powerConsumption;
+    char *version;
+    PowerLimitMode powerLimitMode;
+    uint32_t allocatedPower;
+    poePowerManagementUnitDb powerManagement;                                                     
+    Unite unite;
+} poeDeviceDb;
 
-typedef uint8_t poe_device_sys_status_TYP;
-#define poe_device_sys_status_notPresent_CNS    0
-#define poe_device_sys_status_active_CNS        1
-#define poe_device_sys_status_i2cFailure_CNS    2
+typedef uint8_t poeV3PseStatus;
+#define poeV3PseStatusNr 0
+#define poeV3PseStatusActive 1
+#define poeV3PseStatusI2cFailure 2
+#define poeV3PseStatusNotPresent 0xFF
 
-typedef struct poe_pse_db_t {
-    uint32_t pse_id;
-    char *software_version ;
-    char *hardware_version;
+#define poeMaxNumOfPseDevsInUnit 16
+
+typedef struct poeDeviceSysStatus {
+    union{
+        poeV3PseStatus pseStatus[poeMaxNumOfPseDevsInUnit];
+        uint8_t hwPseSt[poeMaxNumOfPseDevsInUnit];
+    }param;
+} poeDeviceSysStatus;
+
+typedef struct poePseDb {
+    uint32_t pseId;
+    char *softwareVersion ;
+    char *hardwareVersion;
     int16_t temperature;                                                     
-    poe_device_sys_status_TYP status;
-} poe_pse_db_t;
+    poeDeviceSysStatus status;
+} poePseDb;
 
-typedef uint16_t poe_v3_btClass_TYP;
-#define poe_v3_btClass_noClass_CNS  0
-#define poe_v3_btClass_class1_CNS   1
-#define poe_v3_btClass_class2_CNS   2
-#define poe_v3_btClass_class3_CNS   3
-#define poe_v3_btClass_class4_CNS   4
-#define poe_v3_btClass_class5_CNS   5
-#define poe_v3_btClass_class6_CNS   6
-#define poe_v3_btClass_class7_CNS   7
-#define poe_v3_btClass_class8_CNS   8
-#define poe_v3_btClass_na_CNS       0xFFFF
+typedef uint16_t poeV3BtClass;
+#define poeV3BtClassNoClass 0
+#define poeV3BtClassClass1 1
+#define poeV3BtClassClass2 2
+#define poeV3BtClassClass3 3
+#define poeV3BtClassClass4 4
+#define poeV3BtClassClass5 5
+#define poeV3BtClassClass6 6
+#define poeV3BtClassClass7 7
+#define poeV3BtClassClass8 8
+#define poeV3BtClassNa 0xFFFF
 
-typedef uint16_t poe_v3_btClassMethod_TYP;
-#define poe_v3_btClassMethod_regular_CNS    1
-#define poe_v3_btClassMethod_autoClass_CNS  2
+typedef uint16_t poeV3BtClassMethod;
+#define poeV3BtClassMethodRegular 1
+#define poeV3BtClassMethodAutoClass 2
 
-typedef struct {
+typedef struct poeBtPowerClassifications {
+    poeV3BtClass btPortAltASsMeasuredClass;  /* Ss or Ds-Alt-A measured class */
+    poeV3BtClass btPortAltASsAssignedClass;  /* Ss or Ds-Alt-A assigned class */
+    poeV3BtClass btPortAltBMeasuredClass;    /* Ds-Alt-B measured class */
+    poeV3BtClass btPortAltBAssignedClass;    /* Ds-Alt-B assigned class */
+    poeV3BtClassMethod btPortClassMethod;
+} poeBtPowerClassifications;
+
+typedef struct poeAtPowerClassifications {
+    poeV3BtClass pethPsePortPowerClassifications;
+} poeAtPowerClassifications;
+
+typedef uint16_t poeV3BtSignaturee;
+#define poeV3BtSignatureeSingle 1
+#define poeV3BtSignatureeDual 2
+
+typedef struct poePowerClassifications {
+    poeV3BtSignaturee signaturee;
+    poeAtPowerClassifications poeAtClass;
+    poeBtPowerClassifications poeBtClass;
+}poePowerClassifications;
+
+typedef uint8_t poeV3PortActiveChannel;
+#define poeV3PortActiveChannelA 1
+#define poeV3PortActiveChannelB 2
+#define poeV3PortActiveChannelAB 3
+
+typedef struct poeOutputData {
+    poeV3PortActiveChannel activeChannel;
+    uint32_t outputVoltage;
+    uint32_t outputCurrent;
+    uint32_t outputPower;
+} poeOutputData;
+
+typedef uint8_t poePortDetectionStatus;
+#define poePortDetectionStatusOff 1
+#define poePortDetectionStatusSearching 2
+#define poePortDetectionStatusDeliveringPower 3
+#define poePortDetectionStatusFault 4
+
+typedef uint8_t poeV3PortStatus;
+#define poeV3PortStatusOnResDetect 1
+#define poeV3PortStatusOnCapDetect 2
+#define poeV3PortStatusOn4Pair 3
+#define poeV3PortStatusOnForce4Pair 4
+#define poeV3PortStatusOffVoltHigh 5 /* Deprecated */
+#define poeV3PortStatusOffVoltLow 6
+#define poeV3PortStatusOffHwPinDisPort 7
+#define poeV3PortStatusOffUserDisable 8
+#define poeV3PortStatusOffInDetection 9
+#define poeV3PortStatusOffPdNoStandard 10
+#define poeV3PortStatusOffOverUnderLoad 11
+#define poeV3PortStatusOffUnderload 12
+#define poeV3PortStatusOffOverload 13
+#define poeV3PortStatusOffPwrBudgExc 14
+#define poeV3PortStatusOffVoltInj 15
+#define poeV3PortStatusOffCapDetInvSig 16
+#define poeV3PortStatusOffDischarged 17
+#define poeV3PortStatusOnForceOn 18
+#define poeV3PortStatusOffPwErr 19
+#define poeV3PortStatusOffPwBudget 20
+#define poeV3PortStatusOffShortCond 21
+#define poeV3PortStatusOffOverTemp 22
+#define poeV3PortStatusOffDeviceHot 23
+#define poeV3PortStatusOffClassError 24
+#define poeV3PortStatusOffRLowDetect 25
+#define poeV3PortStatusOffPowerOnVerificationFault 26
+#define poeV3PortStatusOnNonStdBtdevice 27
+#define poeV3PortStatusOffUnreachable 28
+#define poeV3PortStatusAltBSingleSignature 255
+
+typedef struct poeDetectionStatus {
     /* input */
     /* output */
-    poe_v3_btClass_TYP     btPortAltASsMeasuredClass;  /* Ss or Ds-Alt-A measured class */
-    poe_v3_btClass_TYP     btPortAltASsAssignedClass;  /* Ss or Ds-Alt-A assigned class */
-    poe_v3_btClass_TYP     btPortAltBMeasuredClass;    /* Ds-Alt-B measured class */
-    poe_v3_btClass_TYP     btPortAltBAssignedClass;    /* Ds-Alt-B assigned class */
-    poe_v3_btClassMethod_TYP      btPortClassMethod;
-}poe_bt_power_classifications_STC;
+    bool capacitorSignatureDetected;
+    poeV3PortStatus poePseHwPortStatus;      /* PSE side - real port status from HW */
+    uint32_t unknownErrorInternalStatus;
+    poeV3PortStatus poePseHwPortStatusAltB;
+    uint32_t unknownErrorInternalStatusAltB;
+} poeDetectionStatus;
 
-/* op_id_get_poe_power_classifications_E */
-typedef struct {
-    /* input */
-    /* output */
-    poe_v3_btClass_TYP     pethPsePortPowerClassifications;
-}poe_at_power_classifications_STC;
-
-typedef uint16_t poe_v3_btSignatureType_TYP;
-#define poe_v3_btSignatureType_single_CNS   1
-#define poe_v3_btSignatureType_dual_CNS     2
-
-typedef struct {
-    poe_v3_btSignatureType_TYP           signature_type;
-    poe_at_power_classifications_STC     poe_at_class;
-    poe_bt_power_classifications_STC     poe_bt_class;
-}poe_power_classifications_STC;
-
-typedef uint8_t poe_v3_port_active_channel_TYP;
-#define poe_v3_port_active_channel_A_CNS   1
-#define poe_v3_port_active_channel_B_CNS   2
-#define poe_v3_port_active_channel_AB_CNS  3
-
-typedef struct {
-    poe_v3_port_active_channel_TYP           active_channel;
-    uint32_t                                 output_voltage;
-    uint32_t                                 output_current;
-    uint32_t                                 output_power;
-} poe_output_data_STC;
-
-typedef uint8_t poe_detection_status_TYP;
-#define poe_detection_status_off_CNS                             1
-#define poe_detection_status_searching_CNS                       2
-#define poe_detection_status_deliveringPower_CNS                 3
-#define poe_detection_status_fault_CNS                           4
-
-typedef uint8_t poe_v3_port_status_TYP;
-#define poe_v3_port_status_on_ResDetect_CNS                     1
-#define poe_v3_port_status_on_CapDetect_CNS                     2
-#define poe_v3_port_status_on_4Pair_CNS                         3
-#define poe_v3_port_status_on_force_4_pair_CNS                  4
-#define poe_v3_port_status_off_VoltHigh_CNS                     5 /* Deprecated */
-#define poe_v3_port_status_off_VoltLow_CNS                      6
-#define poe_v3_port_status_off_HwPinDisPort_CNS                 7
-#define poe_v3_port_status_off_UserDisable_CNS                  8
-#define poe_v3_port_status_off_inDetection_CNS                  9
-#define poe_v3_port_status_off_PD_NoStandard_CNS                10
-#define poe_v3_port_status_off_OverUnderLoad_CNS                11
-#define poe_v3_port_status_off_Underload_CNS                    12
-#define poe_v3_port_status_off_Overload_CNS                     13
-#define poe_v3_port_status_off_pwrBudgExc_CNS                   14
-#define poe_v3_port_status_off_VoltInj_CNS                      15
-#define poe_v3_port_status_off_CapDetInvSig_CNS                 16
-#define poe_v3_port_status_off_Discharged_CNS                   17
-#define poe_v3_port_status_on_ForceOn_CNS                       18
-#define poe_v3_port_status_off_PwErr_CNS                        19
-#define poe_v3_port_status_off_PwBudget_CNS                     20
-#define poe_v3_port_status_off_ShortCond_CNS                    21
-#define poe_v3_port_status_off_OverTemp_CNS                     22
-#define poe_v3_port_status_off_DeviceHot_CNS                    23
-#define poe_v3_port_status_off_ClassError_CNS                   24
-#define poe_v3_port_status_off_r_low_detect_CNS                 25
-#define poe_v3_port_status_off_powerOn_verificationFault_CNS    26
-#define poe_v3_port_status_on_NonStd_BTdevice_CNS               27
-#define poe_v3_port_status_off_unreachable_CNS                  28
-#define poe_v3_port_status_altB_singleSignature_CNS             255
-
-typedef struct {
-    /* input */
-    /* output */
-    bool                                             capacitorSignatureDetected;
-    poe_v3_port_status_TYP                poe_pse_hw_PortStatus;      /* PSE side - real port status from HW */
-    uint32_t                                             unknownError_internal_status;
-    poe_v3_port_status_TYP                poe_pse_hw_PortStatus_altB;
-    uint32_t                                             unknownError_internal_status_altB;
-} poe_detection_status_STC; 
 
 typedef enum {
-    poe_PsePortPowerPriority_critical_E =  1,
-    poe_PsePortPowerPriority_high_E =      2,
-    poe_PsePortPowerPriority_low_E =       3
-} poe_PsePortPowerPriority_ENT;
+    poePsePortPowerPriorityCritical =  1,
+    poePsePortPowerPriorityHigh =      2,
+    poePsePortPowerPriorityLow =       3
+} poePsePortPowerPriority;
 
-typedef uint8_t poe_v3_power_mng_mode_TYP;
-#define poe_v3_power_mng_mode_dynamic_CNS     0
-#define poe_v3_power_mng_mode_static_CNS      1
+typedef uint8_t poeV3PowerMngMode;
+#define poeV3PowerMngModeDynamic 0
+#define poeV3PowerMngModeStatic 1
 
-typedef struct {
-    bool                                         pethPsePortAdminEnable;         
-    poe_PsePortPowerPriority_ENT        pethPsePortPowerPriority;       
-    uint32_t                                         pethPsePortPowerLimit;          
-    bool              legacy_support_status;          
-    poe_v3_power_mng_mode_TYP             power_mng_status;               
-    poe_v3_btClass_TYP                 poePortClassLimit;
-    bool        num_of_events;        
-} poe_port_configurable_data_t;
+typedef struct poePortConfigurableData {
+    bool pethPsePortAdminEnable;         
+    poePsePortPowerPriority pethPsePortPowerPriority;       
+    uint32_t pethPsePortPowerLimit;          
+    bool legacySupportStatus;          
+    poeV3PowerMngMode powerMngStatus;               
+    poeV3BtClass poePortClassLimit;
+    bool numOfEvents;        
+} poePortConfigurableData;
 
-typedef struct {
-    poe_power_classifications_STC     poe_port_power_classifications;
-    poe_output_data_STC               poe_port_output_data;
-    poe_detection_status_STC          poe_port_detection_status;
-    uint32_t                          port_static_mode_alloc_power;
-    uint32_t                          port_bt_primary_alt_alloc_power;
-    uint32_t                          port_bt_secondary_alt_alloc_power;
-} poe_port_power_consumption_data_db_t;
+
+typedef struct poePortPowerConsumptionDataDb {
+    poePowerClassifications poePortPowerClassifications;
+    poeOutputData poePortOutputData;
+    poeDetectionStatus poePortDetectionStatus;
+    uint32_t portStaticModeAllocPower;
+    uint32_t portBtPrimaryAltAllocPower;
+    uint32_t portBtSecondaryAltAllocPower;
+} poePortPowerConsumptionDataDb;
 
 /* Port POE DB, per physical port */
-typedef struct poe_port_db_t {
+typedef struct poePortDb {
     /* key */
-    uint32_t front_panel_index;
+    uint32_t frontPanelIndex;
     /* hw related params */
-    poe_port_hw_type_t port_standard;
-    uint32_t physical_index_a;
-    uint32_t physical_index_b;
+    poePortHwType portStandard;
+    uint32_t physicalIndexA;
+    uint32_t physicalIndexB;
     /* power related param s*/
-    poe_port_power_consumption_data_db_t power_consumption_data; 
+    poePortPowerConsumptionDataDb powerConsumptionData; 
     /* set params - user configurable data*/
-    poe_port_configurable_data_t configurable_data;
+    poePortConfigurableData configurableData;
     /* read only params */
-    poe_detection_status_TYP status;
-    uint32_t max_power_limit;
-    bool oper_status;                                                                               
-} poe_port_db_t;
+    poeDetectionStatus status;
+    uint32_t maxPowerLimit;
+    bool operStatus;                                                                               
+} poePortDb;
 
-#define poe_max_num_of_pse_devs_in_unit_CNS 16
-
-typedef struct {
-    union{
-        poe_device_sys_status_TYP pse_status[poe_max_num_of_pse_devs_in_unit_CNS];
-        uint8_t hw_pse_st[poe_max_num_of_pse_devs_in_unit_CNS];
-    }param;
-} poe_device_sys_status_STC;
-
-#define poe_get_system_status_stub_create_MAC(__func_name)  \
-    BOOLEAN __func_name (                                               \
-        BOOLEAN hw_mode,                                                \
+#define poeGetSystemStatusStubCreateMac(__funcName)  \
+    BOOLEAN __funcName (                                               \
+        BOOLEAN hwMode,                                                \
         /*!     OUTPUTS:        */                                      \
-        poe_device_sys_status_STC *o_sys_status_PTR)
+        poeDeviceSysStatus *oSysStatusPtr)
 
 typedef enum {
-    poe_vendor_none_E = 0,
-    poe_vendor_microchip_E,
-    poe_vendor_ti_E, 
-    poe_vendor_adi_E,
-    poe_vendor_last_E
-} poe_vendor_type_ENT;
+    poeVendorNone = 0,
+    poeVendorMicrochip,
+    poeVendorTi, 
+    poeVendorAdi,
+    poeVendorLast
+} poeVendor;
 
 typedef enum {
-    poe_communication_mode_blocking_E = 0,
-    poe_communication_mode_non_blocking_E,
-    poe_communication_mode_last_E
-} poe_communication_mode_ENT;
+    poeCommunicationModeBlocking = 0,
+    poeCommunicationModeNonBlocking,
+    poeCommunicationModeLast
+} poeCommunicationMode;
 
 typedef enum {
-    poe_guard_band_mode_not_supported_E = 0,
-    poe_guard_band_mode_dynamic_E,
-    poe_guard_band_mode_static_E
-} poe_guard_band_mode_ENT;
+    poeGuardBandModeNotSupported = 0,
+    poeGuardBandModeDynamic,
+    poeGuardBandModeStatic
+} poeGuardBandMode;
 
-typedef uint8_t HAP_poe_port_bt_sig_type_TYP;
-#define HAP_poe_port_bt_sig_type_single_CNS  0
-#define HAP_poe_port_bt_sig_type_dual_CNS    1
+typedef uint8_t HappoePortBtSige;
+#define HappoePortBtSigeSingle 0
+#define HappoePortBtSigeDual 1
 
 
 typedef enum {
-    HAP_poe_port_bt_channel_alt_a_E,
-    HAP_poe_port_bt_channel_alt_b_E,
-    HAP_poe_port_bt_channel_alt_both_E
-}HAP_poe_port_bt_channel_alt_ENT;
+    HappoePortBtChannelAltA,
+    HappoePortBtChannelAltB,
+    HappoePortBtChannelAltBoth
+} HappoePortBtChannelAlt;
 
 /* Current Version Constants */
-#define poe_v3_dragonite_version_num_CNS    0xe000100 /* November 26th, 2017: Dragonite FW 0xE.0x0.0x1.0x0 */
+#define poeV3DragoniteVersionNum 0xe000100 /* November 26th, 2017: Dragonite FW 0xE.0x0.0x1.0x0 */
 
 /**** General parameters ****/
-#define poe_v3_max_num_of_pse_CNS           16
-#define poe_v3_invalid_temperature_CNS      0x7FFF
+#define poeV3MaxNumOfPse 16
+#define poeV3InvalidTemperature 0x7FFF
 
-#define poe_v3_msg_PortLayer2CDPPSEData_Port_is_On_CDP_CNS          0x2000
-#define poe_v3_msg_PortLayer2CDPPSEData_Port_is_On_LLDP_CNS         0x3000
+#define poeV3MsgPortLayer2CdpPseDataPortIsOnCdp 0x2000
+#define poeV3MsgPortLayer2CdpPseDataPortIsOnLldp 0x3000
 
-typedef uint8_t poe_v3_dev_hw_version_TYP;
-#define poe_v3_dev_hw_version_LTC4291_CNS       0x38 /* 802.3 BT: LTC4291 */
+typedef uint8_t poeV3DevHwVersion;
+#define poeV3DevHwVersionLtc4291 0x38 /* 802.3 BT: LTC4291 */
 
 /**** Message parameters ****/
-#define EXTDRVIPC_MAX_MSG_SIZE                          256 
-#define poe_v3_msg_max_size_CNS             EXTDRVIPC_MAX_MSG_SIZE
+#define ExtDrvIpcMaxMsgSize 256 
+#define poeV3MsgMaxSize ExtDrvIpcMaxMsgSize
 
-#define poe_v3_msg_header_size_CNS          8  /* Bytes */
-#define poe_v3_msg_max_data_size_CNS        (poe_v3_msg_max_size_CNS - poe_v3_msg_header_size_CNS)
+#define poeV3MsgHeaderSize 8  /* Bytes */
+#define poeV3MsgMaxDataSize (poeV3MsgMaxSize - poeV3MsgHeaderSize)
 
-typedef uint8_t poe_v3_msg_level_TYP;
-#define poe_v3_msg_level_system_CNS     0
-#define poe_v3_msg_level_port_CNS       1
-#define poe_v3_msg_level_cause_CNS      2
-#define poe_v3_msg_level_debug_CNS      3
+typedef uint8_t poeV3MsgLevel;
+#define poeV3MsgLevelSystem 0
+#define poeV3MsgLevelPort 1
+#define poeV3MsgLevelCause 2
+#define poeV3MsgLevelDebug 3
  
-typedef uint8_t poe_v3_msg_direction_TYP;
-#define poe_v3_msg_dir_get_CNS          0
-#define poe_v3_msg_dir_set_CNS          1
+typedef uint8_t poeV3MsgDirection;
+#define poeV3MsgDirGet 0
+#define poeV3MsgDirSet 1
 
-typedef struct {
-    poe_v3_msg_level_TYP        level;
-    poe_v3_msg_direction_TYP    direction;
-    uint16_t                                 msg_id_swap;
-} poe_v3_msg_opCode_STC;
+typedef struct poeV3MsgOpCodeInfo {
+    poeV3MsgLevel level;
+    poeV3MsgDirection direction;
+    uint16_t msgIdSwap;
+} poeV3MsgOpCodeInfo;
 
-typedef union {
-    poe_v3_msg_opCode_STC params;
-    uint32_t op_code_num_32;
-} poe_v3_msg_opCode_UNT;
+typedef union poeV3MsgOpCode {
+    poeV3MsgOpCodeInfo params;
+    uint32_t opCodeNum32;
+} poeV3MsgOpCode;
 
 /*** system messages id's ***/
-#define poe_v3_sys_msg_portMatrix_CNS           0x1
-#define poe_v3_sys_msg_portSupportStandard_CNS  0x2
-#define poe_v3_sys_msg_powerBankConfig_CNS      0x4
-#define poe_v3_sys_msg_activeRpsPowerBank_CNS   0x10
-#define poe_v3_sys_msg_powerLimitMode_CNS       0x20
-#define poe_v3_sys_msg_l2AllocSetting_CNS       0x40
-#define poe_v3_sys_msg_powerConsumption_CNS     0x80
-#define poe_v3_sys_msg_systemVersion_CNS        0x100
-#define poe_v3_sys_msg_pseTemperature_CNS       0x101
-#define poe_v3_sys_msg_upgReadyStatus_CNS       0x102
-#define poe_v3_sys_msg_upgDataTrans_CNS         0x103
-#define poe_v3_sys_msg_upgStatus_CNS            0x104
-#define poe_v3_sys_msg_serviceNotification_CNS  0x105
-#define poe_v3_sys_msg_pseStatus_CNS            0x106
-#define poe_v3_sys_msg_firmwareReadiness_CNS    0x107
+#define poeV3SysMsgPortMatrix 0x1
+#define poeV3SysMsgPortSupportStandard 0x2
+#define poeV3SysMsgPowerBankConfig 0x4
+#define poeV3SysMsgActiveRpsPowerBank 0x10
+#define poeV3SysMsgPowerLimitMode 0x20
+#define poeV3SysMsgL2AllocSetting 0x40
+#define poeV3SysMsgPowerConsumption 0x80
+#define poeV3SysMsgSystemVersion 0x100
+#define poeV3SysMsgPseTemperature 0x101
+#define poeV3SysMsgUpgReadyStatus 0x102
+#define poeV3SysMsgUpgDataTrans 0x103
+#define poeV3SysMsgUpgStatus 0x104
+#define poeV3SysMsgServiceNotification 0x105
+#define poeV3SysMsgPseStatus 0x106
+#define poeV3SysMsgFirmwareReadiness 0x107
 
 /*** system messages types ***/
-typedef uint8_t poe_v3_portSupStandard_TYP;
-#define poe_v3_portSupStandard_af_CNS           1
-#define poe_v3_portSupStandard_at_CNS           2
-#define poe_v3_portSupStandard_60_CNS           3
-#define poe_v3_portSupStandard_bt_type2_CNS     4
-#define poe_v3_portSupStandard_bt_type3_CNS     5
-#define poe_v3_portSupStandard_bt_type4_CNS     6
+typedef uint8_t poeV3PortSupStandard;
+#define poeV3PortSupStandardAf 1
+#define poeV3PortSupStandardAt 2
+#define poeV3PortSupStandard60 3
+#define poeV3PortSupStandardBte2 4
+#define poeV3PortSupStandardBte3 5
+#define poeV3PortSupStandardBte4 6
 
-typedef uint8_t poe_v3_powerLimitMode_TYP;
-#define poe_v3_powerLimitMode_port_CNS  0
-#define poe_v3_powerLimitMode_class_CNS 1
+typedef uint8_t poeV3PowerLimitMode;
+#define poeV3PowerLimitModePort 0
+#define poeV3PowerLimitModeClass 1
 
-typedef uint8_t poe_v3_operation_mode_TYP;
-#define poe_v3_operation_mode_independent_CNS    1
-#define poe_v3_operation_mode_normal_CNS         2
+typedef uint8_t poeV3OperationMode;
+#define poeV3OperationModeIndependent 1
+#define poeV3OperationModeNormal 2
 
-typedef uint8_t poe_v3_l2AllocPriorty_TYP;
-#define poe_v3_l2AllocPriorty_noraml_CNS    0
-#define poe_v3_l2AllocPriorty_high_CNS      1
+typedef uint8_t poeV3L2AllocPriorty;
+#define poeV3L2AllocPriortyNoraml 0
+#define poeV3L2AllocPriortyHigh 1
 
-typedef uint8_t poe_v3_l2AllocMngMode_TYP;
-#define poe_v3_l2AllocMngMode_asPort_CNS    0
-#define poe_v3_l2AllocMngMode_static_CNS    1
+typedef uint8_t poeV3L2AllocMngMode;
+#define poeV3L2AllocMngModeAsPort 0
+#define poeV3L2AllocMngModeStatic 1
 
-typedef uint8_t poe_v3_pseStatus_TYP;
-#define poe_v3_pseStatus_NR_CNS             0
-#define poe_v3_pseStatus_active_CNS         1
-#define poe_v3_pseStatus_i2cFailure_CNS     2
-#define poe_v3_pseStatus_notPresent_CNS     0xFF
+typedef uint8_t poeV3UpgReadinesss;
+#define poeV3UpgReadinesssRefuse 0
+#define poeV3UpgReadinesssReady 1
 
-typedef uint8_t poe_v3_upgReadinesss_TYP;
-#define poe_v3_upgReadinesss_refuse_CNS     0
-#define poe_v3_upgReadinesss_ready_CNS      1
+typedef uint16_t poeV3UpgBlocke;
+#define poeV3UpgBlockeStandard 0
+#define poeV3UpgBlockeFinal 1
+#define poeV3UpgBlockeUnPlTerm 2   /* unplanned termination */
 
-typedef uint16_t poe_v3_upgBlockType_TYP;
-#define poe_v3_upgBlockType_standard_CNS    0
-#define poe_v3_upgBlockType_final_CNS       1
-#define poe_v3_upgBlockType_unPlTerm_CNS    2   /* unplanned termination */
+typedef uint8_t poeV3UpgStatusCode;
+#define poeV3UpgStatusCodeSuccess 0
+#define poeV3UpgBlockeRetryBlock 1
+#define poeV3UpgBlockeRestart 2
+#define poeV3UpgBlockeAbort 3
+#define poeV3UpgBlockeProcessing 4
 
-typedef uint8_t poe_v3_upgStatusCode_TYP;
-#define poe_v3_upgStatusCode_success_CNS        0
-#define poe_v3_upgBlockType_retryBlock_CNS      1
-#define poe_v3_upgBlockType_restart_CNS         2
-#define poe_v3_upgBlockType_abort_CNS           3
-#define poe_v3_upgBlockType_processing_CNS      4
+typedef uint8_t poeV3FirmwareReadiness;
+#define poeV3FirmwareReadinessInit 0
+#define poeV3FirmwareReadinessReady 1
 
-typedef uint8_t poe_v3_firmwareReadiness_TYP;
-#define poe_v3_firmwareReadiness_init_CNS       0
-#define poe_v3_firmwareReadiness_ready_CNS      1
-
-#define poe_max_num_of_phys_ports_CNS 48
-#define poe_max_num_of_powerBanks_CNS 16
+#define poeMaxNumOfPhysPorts 48
+#define poeMaxNumOfPowerBanks 16
 
 /*** system messages messages structs ***/
-typedef struct {
+typedef struct poeV3MsgSysPortMatrix {
     struct {
-        uint8_t  logical_port;
-        uint8_t  phys_port;
-    }physic_logical_pair[poe_max_num_of_phys_ports_CNS];
-} poe_v3_msg_sysPortMatrix_STC;
+        uint8_t  logicalPort;
+        uint8_t  physPort;
+    }physicLogicalPair[poeMaxNumOfPhysPorts];
+} poeV3MsgSysPortMatrix;
 
-typedef struct {
+typedef struct poeV3MsgSysPortSupportedStd {
     struct{
-        uint8_t                                 logic_port;
-        poe_v3_portSupStandard_TYP portSupportedStd;
-    }supported_std_data[poe_max_num_of_phys_ports_CNS];
-} poe_v3_msg_sysPortSupportedStd_STC;
+        uint8_t                                 logicPort;
+        poeV3PortSupStandard portSupportedStd;
+    }supportedStdData[poeMaxNumOfPhysPorts];
+} poeV3MsgSysPortSupportedStd;
 
-typedef struct {
-    uint16_t power_bank_w_swap[poe_max_num_of_powerBanks_CNS];
-} poe_v3_msg_sysPowerBank_STC;
+typedef struct poeV3MsgSysPowerBank {
+    uint16_t powerBankWSwap[poeMaxNumOfPowerBanks];
+} poeV3MsgSysPowerBank;
 
-typedef struct {
-    uint8_t active_rpsPowerBank_index;
-} poe_v3_msg_sysActiveRpsPowerBank_STC;
+typedef struct poeV3MsgSysActiveRpsPowerBank {
+    uint8_t activeRpsPowerBankIndex;
+} poeV3MsgSysActiveRpsPowerBank;
 
-typedef struct {
-    poe_v3_powerLimitMode_TYP   limit_mode;
-} poe_v3_msg_sysPowerLimitMode_STC;
+typedef struct poeV3MsgSysPowerLimitMode {
+    poeV3PowerLimitMode   limitMode;
+} poeV3MsgSysPowerLimitMode;
 
-typedef struct {
-    poe_v3_l2AllocPriorty_TYP   priority;
-    poe_v3_l2AllocMngMode_TYP   mngMode;
-} poe_v3_msg_sysL2AllocSetting_STC;
+typedef struct poeV3MsgSysL2AllocSetting {
+    poeV3L2AllocPriorty   priority;
+    poeV3L2AllocMngMode   mngMode;
+} poeV3MsgSysL2AllocSetting;
 
-typedef struct {
-    uint32_t                                  powerConsumption_swap;
-    uint32_t                                  powerAllocation_swap;
-} poe_v3_msg_sysPowerConsumption_STC;
+typedef struct poeV3MsgSysPowerConsumption {
+    uint32_t                                  powerConsumptionSwap;
+    uint32_t                                  powerAllocationSwap;
+} poeV3MsgSysPowerConsumption;
 
-typedef struct {
-    poe_v3_operation_mode_TYP   operation_mode;
-    uint8_t                                  reserved[3];
-} poe_v3_msg_sysServiceNotification_STC;
-
-typedef struct {
-    poe_v3_firmwareReadiness_TYP   firmware_readiness;
+typedef struct poeV3MsgSysServiceNotification {
+    poeV3OperationMode                          operationMode;
     uint8_t                                     reserved[3];
-} poe_v3_msg_sysFirmwareReadiness_STC;
+} poeV3MsgSysServiceNotification;
 
-#define poe_fw_version_num_of_bytes_CNS  4
+typedef struct poeV3MsgSysFirmwareReadiness {
+    poeV3FirmwareReadiness                      firmwareReadiness;
+    uint8_t                                     reserved[3];
+} poeV3MsgSysFirmwareReadiness;
 
-typedef union {
-    uint8_t  ver_bytes[poe_fw_version_num_of_bytes_CNS];
-    uint32_t ver_num;
-} poe_v3_msg_sw_version_UNT;
+#define poeFwVersionNumOfBytes 4
 
-typedef struct {
+typedef union poeV3MsgSwVersion {
+    uint8_t  verBytes[poeFwVersionNumOfBytes];
+    uint32_t verNum;
+} poeV3MsgSwVersion;
+
+typedef struct poeV3MsgSysSystemVersion {
     /* outputs */
-    poe_v3_msg_sw_version_UNT   poeFwVersion;
-    poe_v3_msg_sw_version_UNT   converterSwVersion;
+    poeV3MsgSwVersion   poeFwVersion;
+    poeV3MsgSwVersion   converterSwVersion;
     struct {
         uint8_t                              pseSwVersion;
         uint8_t                              pseHwVersion;
-    }pse_version_data[poe_v3_max_num_of_pse_CNS];
-} poe_v3_msg_sysSystemVersion_STC;
+    }pseVersionData[poeV3MaxNumOfPse];
+} poeV3MsgSysSystemVersion;
 
-typedef struct {
+typedef struct poeV3MsgSysPseTemperature {
     /* outputs */
-    int16_t              pse_temp_swap[poe_v3_max_num_of_pse_CNS];
-} poe_v3_msg_sysPseTemperature_STC;
+    int16_t              pseTempSwap[poeV3MaxNumOfPse];
+} poeV3MsgSysPseTemperature;
 
-typedef struct {
+typedef struct poeV3MsgSysPseStatus {
     /* outputs */
-    poe_v3_pseStatus_TYP    pse_status[poe_v3_max_num_of_pse_CNS];
-} poe_v3_msg_sysPseStatus_STC;
+    poeV3PseStatus    pseStatus[poeV3MaxNumOfPse];
+} poeV3MsgSysPseStatus;
 
-typedef struct {
-    uint32_t                                 pseVersionId_swp;
+typedef struct poeV3MsgSysUpgReadyStatus {
     /* outputs */
-    poe_v3_upgReadinesss_TYP    readiness;
+    poeV3UpgReadinesss    readiness;
     uint8_t                                  reserved;
-    uint16_t                                 blockSize_swp;
-} poe_v3_msg_sysUpgReadyStatus_STC;
+    uint16_t                                 blockSizeSwp;
+} poeV3MsgSysUpgReadyStatus;
 
-#define poe_v3_msg_upgData_max_size_CNS (poe_v3_msg_max_data_size_CNS-12)
+#define poeV3MsgUpgDataMaxSize (poeV3MsgMaxDataSize-12)
 
-typedef struct {
-    uint32_t             pseVersionId_swp;
-    uint16_t             block_num_swp;
-    uint16_t             block_type_swp;
-    uint16_t             checksum_swp;
+typedef struct poeV3MsgSysUpgDataTrans {
+    uint32_t             pseVersionIdSwp;
+    uint16_t             blockNumSwp;
+    uint16_t             blockeSwp;
+    uint16_t             checksumSwp;
     uint16_t             reserved;
-    uint8_t              data[poe_v3_msg_upgData_max_size_CNS];
-} poe_v3_msg_sysUpgDataTrans_STC;
+    uint8_t              data[poeV3MsgUpgDataMaxSize];
+} poeV3MsgSysUpgDataTrans;
 
 typedef struct {
     uint16_t                                 block_num_swp;
-    poe_v3_upgStatusCode_TYP    statusCode;
-    bool                                 err_exists;
-    char                                    err_msg[32];
-} poe_v3_msg_sysUpgStatus_STC;
+    poeV3UpgStatusCode                       statusCode;
+    bool                                     err_exists;
+    char                                     err_msg[32];
+} poeV3MsgSysUpgStatus;
 
 
 /*** End of system level ***/
@@ -499,223 +496,223 @@ typedef struct {
 /***************************/
 
 /*** port messages id's ***/
-#define poe_v3_port_msg_portEnable_CNS          0x10
-#define poe_v3_port_msg_physClassMethod_CNS     0x11
-#define poe_v3_port_msg_legacyDetected_CNS      0x12
-#define poe_v3_port_msg_AltBEnable_CNS          0x14
-#define poe_v3_port_msg_portPowerLimit_CNS      0x20
-#define poe_v3_port_msg_portPriority_CNS        0x21
-#define poe_v3_port_msg_powerMng_CNS            0x22
-#define poe_v3_port_msg_btAutoClass_CNS         0x23
-#define poe_v3_port_msg_portClassLimit_CNS      0x24
-#define poe_v3_port_msg_l2ReqPowerLldp_CNS      0x40
-#define poe_v3_port_msg_l2ReqPowerList_CNS      0x41
-#define poe_v3_port_msg_allocPower_CNS          0x42
-#define poe_v3_port_msg_btManualAutoClass_CNS   0x43
-#define poe_v3_port_msg_powerConsumInfo_CNS     0x80
-#define poe_v3_port_msg_portStatus_CNS          0x81
-#define poe_v3_port_msg_portCounters_CNS        0x82
-#define poe_v3_port_msg_portConfig_CNS          0x83
+#define poeV3PortMsgPortEnableCns          0x10
+#define poeV3PortMsgPhysClassMethodCns     0x11
+#define poeV3PortMsgLegacyDetectedCns      0x12
+#define poeV3PortMsgAltBEnableCns          0x14
+#define poeV3PortMsgPortPowerLimitCns      0x20
+#define poeV3PortMsgPortPriorityCns        0x21
+#define poeV3PortMsgPowerMngCns            0x22
+#define poeV3PortMsgBtAutoClassCns         0x23
+#define poeV3PortMsgPortClassLimitCns      0x24
+#define poeV3PortMsgL2ReqPowerLldpCns      0x40
+#define poeV3PortMsgL2ReqPowerLins      0x41
+#define poeV3PortMsgAllocPowerCns          0x42
+#define poeV3PortMsgBtManualAutoClassCns   0x43
+#define poeV3PortMsgPowerConsumInfoCns     0x80
+#define poeV3PortMsgPortStatusCns          0x81
+#define poeV3PortMsgPortCountersCns        0x82
+#define poeV3PortMsgPortConfigCns          0x83
 
 /*** port messages types ***/
 
-typedef uint8_t poe_v3_port_admin_TYP;
-#define poe_v3_port_admin_disable_CNS   0
-#define poe_v3_port_admin_enable_CNS    1
-#define poe_v3_port_admin_invalid_CNS   0xff
+typedef uint8_t poeV3PortAdmin;
+#define poeV3PortAdminDisableCns   0
+#define poeV3PortAdminEnableCns    1
+#define poeV3PortAdminInvalidCns   0xff
 
-typedef uint8_t poe_v3_physLayerClass_TYP;
-#define poe_v3_physLayerClass_1_event_CNS   1
-#define poe_v3_physLayerClass_2_event_CNS   2
+typedef uint8_t poeV3PhysLayerClass;
+#define poeV3PhysLayerClass1EventCns   1
+#define poeV3PhysLayerClass2EventCns   2
 
-typedef uint8_t poe_v3_legacyMode_TYP;
-#define poe_v3_legacyMode_disable_CNS       0
-#define poe_v3_legacyMode_enable_CNS        1
-#define poe_v3_legacyMode_auto_CNS          2
+typedef uint8_t poeV3LegacyMode;
+#define poeV3LegacyModeDisableCns       0
+#define poeV3LegacyModeEnableCns        1
+#define poeV3LegacyModeAutoCns          2
 
-typedef uint8_t poe_v3_alt_b_mode_TYP;
-#define poe_v3_alt_b_mode_disable_CNS       0
-#define poe_v3_alt_b_mode_enable_CNS        1
-#define poe_v3_alt_b_mode_forceEnable_CNS   2
+typedef uint8_t poeV3AltBMode;
+#define poeV3AltBModeDisableCns       0
+#define poeV3AltBModeEnableCns        1
+#define poeV3AltBModeForceEnableCns   2
 
-typedef uint8_t poe_v3_port_priority_TYP;
-#define poe_v3_port_priority_low_CNS        0
-#define poe_v3_port_priority_high_CNS       1
-#define poe_v3_port_priority_critical_CNS   2
+typedef uint8_t poeV3PortPriority;
+#define poeV3PortPriorityLowCns        0
+#define poeV3PortPriorityHighCns       1
+#define poeV3PortPriorityCriticalCns   2
 
-typedef uint8_t poe_v3_classLimit_TYP;
-#define poe_v3_classLimit_unlimited_CNS     0
-#define poe_v3_classLimit_class3_CNS        3
-#define poe_v3_classLimit_class4_CNS        4
-#define poe_v3_classLimit_class5_CNS        5
-#define poe_v3_classLimit_class6_CNS        6
-#define poe_v3_classLimit_class7_CNS        7
+typedef uint8_t poeV3ClassLimit;
+#define poeV3ClassLimitUnlimitedCns     0
+#define poeV3ClassLimitClass3Cns        3
+#define poeV3ClassLimitClass4Cns        4
+#define poeV3ClassLimitClass5Cns        5
+#define poeV3ClassLimitClass6Cns        6
+#define poeV3ClassLimitClass7Cns        7
 
-typedef uint8_t poe_v3_port_power_alloc_by_TYP;
-#define poe_v3_port_power_alloc_by_hw_CNS     0
-#define poe_v3_port_power_alloc_by_lldp_CNS   1
-#define poe_v3_port_power_alloc_by_cdp_CNS    2
+typedef uint8_t poeV3PortPowerAllocBy;
+#define poeV3PortPowerAllocByHwCns     0
+#define poeV3PortPowerAllocByLldpCns   1
+#define poeV3PortPowerAllocByCdpCns    2
 
-#define poe_v3_port_status_max_status_CNS poe_v3_port_status_off_unreachable_CNS /* must be updated whenever a new status added above */
+#define poeV3PortStatusMaxStatusCns poeV3PortStatusOffUnreachableCns /* must be updated whenever a new status added above */
 
-typedef uint8_t poe_v3_btAutoClass_TYP;
-#define poe_v3_btAutoClass_disabled_CNS     0
-#define poe_v3_btAutoClass_auto_CNS         1
-#define poe_v3_btAutoClass_force_CNS        2
+typedef uint8_t poeV3BtAutoClass;
+#define poeV3BtAutoClassDisabledCns     0
+#define poeV3BtAutoClassAutoCns         1
+#define poeV3BtAutoClassForceCns        2
 
-typedef uint8_t poe_v3_btAutoClassAction_TYP;
-#define poe_v3_btAutoClassAction_doNothing_CNS  0
-#define poe_v3_btAutoClassAction_initCalc_CNS   1
+typedef uint8_t poeV3BtAutoClassAction;
+#define poeV3BtAutoClassActionDoNothingCns  0
+#define poeV3BtAutoClassActionInitCalcCns   1
 
-#define poe_v3_powerRequest_NR_CNS          MAX_uint32_t
+#define poeV3PowerRequestNrCns          MaxUint32T
 
 /*** port level messages structs ***/
 typedef struct {    
-    uint8_t                              logic_port_num;
-    poe_v3_port_admin_TYP   port_admin_enable_disable;
+    uint8_t                              logicPortNum;
+    poeV3PortAdmin                       portAdminEnableDisable;
     uint8_t                              reserved[2];
-} poe_v3_msg_portEnable_STC;
+} poeV3MsgPortEnable;
 
 typedef struct {    
-    uint8_t                                  logic_port_num;
-    poe_v3_physLayerClass_TYP   numOfEvents;
+    uint8_t                                  logicPortNum;
+    poeV3PhysLayerClass   numOfEvents;
     uint8_t                                  reserved[2];
-} poe_v3_msg_portPhysLayerClassMethod_STC;
+} poeV3MsgPortPhysLayerClassMethod;
 
 typedef struct {
-    uint8_t                              logic_port_num;
-    poe_v3_legacyMode_TYP   legacyMode;
-} poe_v3_msg_portLegacy_STC;
+    uint8_t                              logicPortNum;
+    poeV3LegacyMode   legacyMode;
+} poeV3MsgPortLegacy;
 
 typedef struct {
-    uint8_t                              logic_port_num;
-    poe_v3_alt_b_mode_TYP   altb_mode;
+    uint8_t                              logicPortNum;
+    poeV3AltBMode                        altbMode;
     uint8_t                              reserved[2];
-} poe_v3_msg_portAltB_STC;
+} poeV3MsgPortAltB;
 
 typedef struct {
-    uint8_t                              logic_port_num;
+    uint8_t                              logicPortNum;
     uint8_t                              reserved[3];
-    uint32_t                             powerLimit_mw_swap;
-} poe_v3_msg_portPowerLimit_STC;
+    uint32_t                             powerLimitMwSwap;
+} poeV3MsgPortPowerLimit;
 
 typedef struct {
-    uint8_t                                  logic_port_num;
-    poe_v3_port_priority_TYP    portPriority;
+    uint8_t                                  logicPortNum;
+    poeV3PortPriority                        portPriority;
     uint8_t                                  reserved[2];
-} poe_v3_msg_portPriority_STC;
+} poeV3MsgPortPriority;
 
 typedef struct {
-    uint8_t                              logic_port_num;
-    poe_v3_power_mng_mode_TYP mng_mode;
+    uint8_t                              logicPortNum;
+    poeV3PowerMngMode mngMode;
     uint8_t                              reserved[2];
-} poe_v3_msg_portPowerMngMode_STC;
+} poeV3MsgPortPowerMngMode;
 
 typedef struct {
-    uint8_t                              logic_port_num;
-    poe_v3_classLimit_TYP   class_limit_val;
+    uint8_t                              logicPortNum;
+    poeV3ClassLimit   classLimitVal;
     uint8_t                              reserved[2];
-} poe_v3_msg_portClassLimit_STC;
+} poeV3MsgPortClassLimit;
 
 typedef struct {
-    uint8_t                              logic_port_num;
+    uint8_t                              logicPortNum;
     uint8_t                              reserved[3];
-    uint32_t                             powerRequest_mW_swap;
-    uint32_t                             powerRequestB_mW_swap;
-} poe_v3_msg_portSetL2PowerReqLldp_STC;
+    uint32_t                             powerRequestMwSwap;
+    uint32_t                             powerRequestBMwSwap;
+} poeV3MsgPortSetL2PowerReqLldp;
 
 typedef struct {
-    uint8_t              logic_port_num;
+    uint8_t              logicPortNum;
     uint8_t              reserved[3];
-    uint32_t             powerRequest_mW_swap[4];
-} poe_v3_msg_portSetL2PowerReqList_STC;
+    uint32_t             powerRequestMwSwap[4];
+} poeV3MsgPortSetL2PowerReqList;
 
 typedef struct {
-    uint8_t                                      logic_port_num;
-    poe_v3_port_power_alloc_by_TYP     allocBy;
+    uint8_t                                      logicPortNum;
+    poeV3PortPowerAllocBy     allocBy;
     uint8_t                                      reserved[2];
-    uint32_t                                     powerAlloc_mw_swap;
-    uint32_t                                     powerSupplied_mw_swap;
-    uint32_t                                     powerAllocB_mw_swap;
-    uint32_t                                     powerSuppliedB_mw_swap;
-} poe_v3_msg_portGetAllocPower_STC;
+    uint32_t                                     powerAllocMwSwap;
+    uint32_t                                     powerSuppliedMwSwap;
+    uint32_t                                     powerAllocBMwSwap;
+    uint32_t                                     powerSuppliedBMwSwap;
+} poeV3MsgPortGetAllocPower;
 
 typedef struct {
-    uint8_t                                      logic_port_num;
+    uint8_t                                      logicPortNum;
     uint8_t                                      reserved[3];
     uint8_t                                      state; /* admin enable/disable */
-    poe_v3_physLayerClass_TYP        num_of_events;
-    poe_v3_legacyMode_TYP            legacy_support;
-    poe_v3_alt_b_mode_TYP            altB_mode;
-    poe_v3_port_priority_TYP         priority;
-    poe_v3_port_priority_TYP         mng_mode;
-    poe_v3_btAutoClass_TYP           auto_class;
-    poe_v3_classLimit_TYP            class_limit;
-    uint32_t                                     power_limit_swap;
-} poe_v3_msg_portGetConfig_STC;
+    poeV3PhysLayerClass                          numOfEvents;
+    poeV3LegacyMode                              legacySupport;
+    poeV3AltBMode                                altBMode;
+    poeV3PortPriority                            priority;
+    poeV3PortPriority                            mngMode;
+    poeV3BtAutoClass                             autoClass;
+    poeV3ClassLimit                              classLimit;
+    uint32_t                                     powerLimitSwap;
+} poeV3MsgPortGetConfig;
 
 typedef struct {
-    uint8_t                                      logic_port_num;
-    poe_v3_port_active_channel_TYP    active_channel;
+    uint8_t                                      logicPortNum;
+    poeV3PortActiveChannel                       activeChannel;
     uint8_t                                      reserved[2];
-    uint32_t                                     voltage_in_volts_swap;
-    uint32_t                                     current_in_ma_swap;
-    uint32_t                                     power_in_mw_swap;
-    uint32_t                                     classification_swap;
-} poe_v3_msg_portPowerConsumInfo_STC;
+    uint32_t                                     voltageInVoltsSwap;
+    uint32_t                                     currentInMaSwap;
+    uint32_t                                     powerInMwSwap;
+    uint32_t                                     classificationSwap;
+} poeV3MsgPortPowerConsumInfo;
 
 typedef struct {
-    uint8_t                              logic_port_num;
-    poe_v3_port_status_TYP   port_status_a;
-    poe_v3_port_status_TYP   port_status_b;
-    uint8_t                              reserved;
-} poe_v3_msg_portStatus_STC;
+    uint8_t                                      logicPortNum;
+    poeV3PortStatus                              portStatusA;
+    poeV3PortStatus                              portStatusB;
+    uint8_t                                      reserved;
+} poeV3MsgPortStatus;
 
 typedef struct {
-    uint8_t                          logic_port_num;
+    uint8_t                          logicPortNum;
     uint8_t                          reserved[3];
-    uint32_t                         invalid_sinature_swap;
-    uint32_t                         invalid_sinature_a_swap;
-    uint32_t                         invalid_sinature_b_swap;
-    uint32_t                         power_denied_swap;
-    uint32_t                         power_denied_a_swap;
-    uint32_t                         power_denied_b_swap;
-    uint32_t                         overload_swap;
-    uint32_t                         overload_a_swap;
-    uint32_t                         overload_b_swap;
-    uint32_t                         short_swap;
-    uint32_t                         absent_swap;
-    uint32_t                         absent_a_swap;
-    uint32_t                         absent_b_swap;
-} poe_v3_msg_portCounters_STC;
+    uint32_t                         invalidSinatureSwap;
+    uint32_t                         invalidSinatureASwap;
+    uint32_t                         invalidSinatureBSwap;
+    uint32_t                         powerDeniedSwap;
+    uint32_t                         powerDeniedASwap;
+    uint32_t                         powerDeniedBSwap;
+    uint32_t                         overloadSwap;
+    uint32_t                         overloadASwap;
+    uint32_t                         overloadBSwap;
+    uint32_t                         shortSwap;
+    uint32_t                         absentSwap;
+    uint32_t                         absentASwap;
+    uint32_t                         absentBSwap;
+} poeV3MsgPortCounters;
 
 /** BT **/
 typedef struct {
-    uint8_t                              logic_port_num;
-    poe_v3_btAutoClass_TYP  autoClass_status;
+    uint8_t                              logicPortNum;
+    poeV3BtAutoClass  autoClassStatus;
     uint16_t                             reserved;
-} poe_v3_msg_portBtAutoClass_STC;
+} poeV3MsgPortBtAutoClass;
 
 typedef struct {
-    uint8_t                                      logic_port_num;
-    poe_v3_btAutoClassAction_TYP    action;
+    uint8_t                                      logicPortNum;
+    poeV3BtAutoClassAction                       action;
     uint16_t                                     reserved;
-} poe_v3_msg_portBtAutoClassAction_STC;
+} poeV3MsgPortBtAutoClassAction;
 
 typedef struct {
-    uint8_t                                      logic_port_num;
-    poe_v3_port_active_channel_TYP   active_channel;
+    uint8_t                                      logicPortNum;
+    poeV3PortActiveChannel                       activeChannel;
     uint8_t                                      reserved[2];
-    uint32_t                                     volt_v_swap;
-    uint32_t                                     current_ma_swap;
-    uint32_t                                     consump_mw_swap;
-    poe_v3_btSignatureType_TYP      signature_type_swap;
-    poe_v3_btClassMethod_TYP        class_method_swap;
-    uint16_t                                     measured_class_a_swap;
-    uint16_t                                     assigned_class_a_swap;
-    uint16_t                                     measured_class_b_swap;
-    uint16_t                                     assigned_class_b_swap;
-} poe_v3_msg_portBtPowerConsumInfo_STC;
+    uint32_t                                     voltVSwap;
+    uint32_t                                     currentMaSwap;
+    uint32_t                                     consumpMwSwap;
+    poeV3BtSignaturee                            signatureTypeSwap;
+    poeV3BtClassMethod                           classMethodSwap;
+    uint16_t                                     measuredClassASwap;
+    uint16_t                                     assignedClassASwap;
+    uint16_t                                     measuredClassBSwap;
+    uint16_t                                     assignedClassBSwap;
+} poeV3MsgPortBtPowerConsumInfo;
 
 
 /*** End of port level ***/
@@ -723,113 +720,130 @@ typedef struct {
 /***************************/
 
 /*** cause messages id's ***/
-#define poe_v3_cause_portStatus_CNS             0x80
+#define poeV3CausePortStatusCns             0x80
 
 typedef struct {    
     union{
-        uint8_t          port_status_change_bitmap[8];
-        uint64_t         port_change_num;
+        uint8_t          portStatusChangeBitmap[8];
+        uint64_t         portChangeNum;
     };
-} poe_v3_msg_causePortStatus_STC;
+} poeV3MsgCausePortStatus;
 
 /* messages union */
 typedef union {
-    uint8_t                                              data[poe_v3_msg_max_data_size_CNS];
+    uint8_t                                              data[poeV3MsgMaxDataSize];
     /* system level */
-    poe_v3_msg_sysPortMatrix_STC            sysPortMatrix_params;
-    poe_v3_msg_sysPortSupportedStd_STC      sysPortSupportStd_params;
-    poe_v3_msg_sysPowerBank_STC             sysPowerBank_params;
-    poe_v3_msg_sysActiveRpsPowerBank_STC    sysActiveRpsPowerBank_params;
-    poe_v3_msg_sysPowerLimitMode_STC        sysPowerLimitMode_params;
-    poe_v3_msg_sysL2AllocSetting_STC        sysL2AllocSetting_params;
-    poe_v3_msg_sysPowerConsumption_STC      sysPowerConsumption_params;
-    poe_v3_msg_sysSystemVersion_STC         sysSystemVerion_params;
-    poe_v3_msg_sysPseTemperature_STC        sysPseTemperature_params;
-    poe_v3_msg_sysPseStatus_STC             sysPseStatus_params;
-    poe_v3_msg_sysUpgReadyStatus_STC        sysUpgReadyStatus_params;
-    poe_v3_msg_sysUpgDataTrans_STC          sysUpgDataTrans_params;
-    poe_v3_msg_sysUpgStatus_STC             sysUpgStatus_params;
-    poe_v3_msg_sysServiceNotification_STC   sysServiceNotification_params;
-    poe_v3_msg_sysFirmwareReadiness_STC     sysFirmwareReadiness_params;
+    poeV3MsgSysPortMatrix            sysPortMatrixParams;
+    poeV3MsgSysPortSupportedStd      sysPortSupportStdParams;
+    poeV3MsgSysPowerBank             sysPowerBankParams;
+    poeV3MsgSysActiveRpsPowerBank    sysActiveRpsPowerBankParams;
+    poeV3MsgSysPowerLimitMode        sysPowerLimitModeParams;
+    poeV3MsgSysL2AllocSetting        sysL2AllocSettingParams;
+    poeV3MsgSysPowerConsumption      sysPowerConsumptionParams;
+    poeV3MsgSysSystemVersion         sysSystemVerionParams;
+    poeV3MsgSysPseTemperature        sysPseTemperatureParams;
+    poeV3MsgSysPseStatus             sysPseStatusParams;
+    poeV3MsgSysUpgReadyStatus        sysUpgReadyStatusParams;
+    poeV3MsgSysUpgDataTrans          sysUpgDataTransParams;
+    poeV3MsgSysUpgStatus             sysUpgStatusParams;
+    poeV3MsgSysServiceNotification   sysServiceNotificationParams;
+    poeV3MsgSysFirmwareReadiness     sysFirmwareReadinessParams;
 
     /* port level */
-    poe_v3_msg_portEnable_STC               portEnaleDisable_params;
-    poe_v3_msg_portPhysLayerClassMethod_STC portPhysClass_params;
-    poe_v3_msg_portLegacy_STC               portLegacy_params;
-    poe_v3_msg_portAltB_STC                 portAltb_params;
-    poe_v3_msg_portPowerLimit_STC           portPowerLimit_params;
-    poe_v3_msg_portPriority_STC             portPriority_params;
-    poe_v3_msg_portPowerMngMode_STC         portPowerMngMode_params;
-    poe_v3_msg_portClassLimit_STC           portClassLimit_params;
-    poe_v3_msg_portSetL2PowerReqLldp_STC    portL2PowerReqLldpSet_params;
-    poe_v3_msg_portSetL2PowerReqList_STC    portL2PowerReqListSet_params;
-    poe_v3_msg_portGetAllocPower_STC        portAllocPowerGet_params;
-    poe_v3_msg_portPowerConsumInfo_STC      portPowerConsumInfo_params;
-    poe_v3_msg_portStatus_STC               portStatus_params;
-    poe_v3_msg_portCounters_STC             portCounters_params;
-    poe_v3_msg_portGetConfig_STC            portConfigGet_params;
+    poeV3MsgPortEnable               portEnaleDisableParams;
+    poeV3MsgPortPhysLayerClassMethod portPhysClassParams;
+    poeV3MsgPortLegacy               portLegacyParams;
+    poeV3MsgPortAltB                 portAltbParams;
+    poeV3MsgPortPowerLimit           portPowerLimitParams;
+    poeV3MsgPortPriority             portPriorityParams;
+    poeV3MsgPortPowerMngMode         portPowerMngModeParams;
+    poeV3MsgPortClassLimit           portClassLimitParams;
+    poeV3MsgPortSetL2PowerReqLldp    portL2PowerReqLldpSetParams;
+    poeV3MsgPortSetL2PowerReqList    portL2PowerReqListSetParams;
+    poeV3MsgPortGetAllocPower        portAllocPowerGetParams;
+    poeV3MsgPortPowerConsumInfo      portPowerConsumInfoParams;
+    poeV3MsgPortStatus               portStatusParams;
+    poeV3MsgPortCounters             portCountersParams;
+    poeV3MsgPortGetConfig            portConfigGetParams;
     /* port level - BT */
-    poe_v3_msg_portBtAutoClass_STC          portBtAutoClass_params;
-    poe_v3_msg_portBtAutoClassAction_STC    portBtAutoClassAction_params;
-    poe_v3_msg_portBtPowerConsumInfo_STC    portBtPowerConsumInfo_params;
+    poeV3MsgPortBtAutoClass          portBtAutoClassParams;
+    poeV3MsgPortBtAutoClassAction    portBtAutoClassActionParams;
+    poeV3MsgPortBtPowerConsumInfo    portBtPowerConsumInfoParams;
     /* cause level */
-    poe_v3_msg_causePortStatus_STC          causePortStatus_params;
-} poe_v3_msg_UNT;
+    poeV3MsgCausePortStatus          causePortStatusParams;
+} poeV3MsgUnt;
 
 /* PSE FW update - PSE FW header*/
 typedef struct
 {
-    uint8_t              header_size;    /* header size, include this byte */
-    uint32_t             version_id_swap;
-} poe_v3_pseUpdate_fw_header_STC;
+    uint8_t              headerSize;    /* header size, include this byte */
+    uint32_t             versionIdSwap;
+} poeV3PseUpdateFwHeader;
 
 /**** Messages MACROs ****/
-#define poe_v3_set_msg_opCode_MAC(_opcode, _level, _dir, _id)   \
+#define poeV3SetMsgOpCodeMac(_opcode, _level, _dir, _id)   \
     memset(&_opcode, 0, sizeof(_opcode));                                   \
     _opcode.params.level = _level;                                          \
     _opcode.params.direction = _dir;                                        \
-    _opcode.params.msg_id_swap = swap16(_id);
+    _opcode.params.msgIdSwap = swap16(_id);
 
-#define poe_convert_hw_to_detection_status_MAC(_port_status, _detection_status)   \
-    _detection_status = poe_detection_status_off_CNS;                \
-    switch (_port_status) {                                                             \
-        case poe_v3_port_status_off_inDetection_CNS:                  \
-        case poe_v3_port_status_off_CapDetInvSig_CNS:               \                   \
-            _detection_status = poe_detection_status_searching_CNS;       \
+#define poeConvertHwToDetectionStatusMac(_portStatus, _detectionStatus)   \
+    _detectionStatus = poeDetectionStatusOffCns;                \
+    switch (_portStatus) {                                                             \
+        case poeV3PortStatusOffInDetectionCns:                  \
+        case poeV3PortStatusOffCapDetInvSigCns:               \                   \
+            _detectionStatus = poeDetectionStatusSearchingCns;       \
             break;                                                                      \
-        case poe_v3_port_status_on_CapDetect_CNS:                         \
-        case poe_v3_port_status_on_ResDetect_CNS:                         \
-        case poe_v3_port_status_on_4Pair_CNS:                                \
-        case poe_v3_port_status_on_NonStd_BTdevice_CNS:                        \
-            _detection_status = poe_detection_status_deliveringPower_CNS; \
+        case poeV3PortStatusOnCapDetectCns:                         \
+        case poeV3PortStatusOnResDetectCns:                         \
+        case poeV3PortStatusOn4PairCns:                                \
+        case poeV3PortStatusOnNonStdBTdeviceCns:                        \
+            _detectionStatus = poeDetectionStatusDeliveringPowerCns; \
             break;                                                                      \
-        case poe_v3_port_status_off_UserDisable_CNS:                      \
-            _detection_status = poe_detection_status_off_CNS;        \
+        case poeV3PortStatusOffUserDisableCns:                      \
+            _detectionStatus = poeDetectionStatusOffCns;        \
             break;                                                                      \                                                                    \                                                                     \
         default:                                                                        \
-            _detection_status = poe_detection_status_fault_CNS;      \
+            _detectionStatus = poeDetectionStatusFaultCns;      \
             break;                                                                      \
     }
 
-poe_op_result_t internal_create_object(poe_object_id_t *poe_object_id);
-poe_op_result_t poe_initialize(void);
-bool poe_port_get_first_index(uint32_t *front_panel_index);
-bool poe_port_get_next_index(uint32_t *front_panel_index);
-poe_port_hw_type_t poe_get_port_poe_hw_type(uint32_t front_panel_index);
-bool poe_port_get_physical_index(uint32_t front_panel_index, uint32_t *physical_index);
-bool poe_port_get_second_physical_index(uint32_t front_panel_index, uint32_t *physical_index);
-bool EXTHWG_POE_IPc_send_recieve_msg(bool send, uint32_t op_code, uint8_t data_len, uint8_t *data);
-poe_op_result_t poe_v3_send_receive_msg(poe_v3_msg_level_TYP msg_type, poe_v3_msg_direction_TYP direction, uint16_t msg_id, uint8_t data_len, void *data_PTR);
-poe_op_result_t poe_port_matrix_initialize();
-poe_op_result_t poe_port_standard_initialize();
-poe_op_result_t poe_power_bank_initialize();
-poe_op_result_t poe_port_set_admin_enable(uint32_t front_panel_index, bool enable);
-poe_op_result_t poe_port_get_admin_enable(uint32_t front_panel_index, bool *enable);
+poeOpResult InternalCreateObject(poeObjectId *poeObjectId);
+poeOpResult poeInitialize(void);
+bool poePortGetFirstIndex(uint32_t *frontPanelIndex);
+bool poePortGetNextIndex(uint32_t *frontPanelIndex);
+poePortHwType poeGetPortpoeHwe(uint32_t frontPanelIndex);
+bool poePortGetPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex);
+bool poePortGetSecondPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex);
+bool ExthwgpoeIpcSendRecieveMsg(bool send, uint32_t opCode, uint8_t dataLen, uint8_t *data);
+poeOpResult poeV3SendReceiveMsg(poeV3MsgLevel msge, poeV3MsgDirection direction, uint16_t msgId, uint8_t dataLen, void *dataPtr);
+poeOpResult poePortMatrixInitialize();
+poeOpResult poePortStandardInitialize();
+poeOpResult poePowerBankInitialize();
+poeOpResult poeDevGetTotalPower(int32_t poeDevNum, int32_t *totalPowerMwPtr);
+poeOpResult poeDevGetPowerConsumption(int32_t poeDevNum, int32_t *powerConsumptionMwPtr);
+poeOpResult poeDevGetVersion(int32_t poeDevNum, char *versionPtr);
+poeOpResult poeDevGetPowerLimitMode(uint32_t poeDevNum, uint32_t *powerLimitPtr);
+poeOpResult poeDevSetPowerLimitMode(uint32_t poeDevNum, uint32_t powerLimitPtr);
+poeOpResult poePseGetSoftwareVersion(int32_t poePseNum, char *versionPtr);
+poeOpResult poePseGetHardwareVersion(int32_t poePseNum, char *versionPtr);
+poeOpResult poePseGetTemperature(int32_t poePseNum, int16_t *temperaturePtr);
+poeOpResult poePseGetStatus(int32_t poePseNum, int16_t *statusPtr);
+poeOpResult poePortGetPortStandard(uint32_t frontPanelIndex, bool *portStandardPtr);
+poeOpResult poePortSetAdminEnable(uint32_t frontPanelIndex, const bool enable);
+poeOpResult poePortGetAdminEnable(uint32_t frontPanelIndex, bool *enablePtr);
+poeOpResult poePortSetPowerLimit(uint32_t frontPanelIndex, const uint32_t powerLimit);
+poeOpResult poePortGetPowerLimit(uint32_t frontPanelIndex, uint32_t *powerLimitPtr);
+poeOpResult poePortSetPowerPriority(uint32_t frontPanelIndex, const uint32_t powerPriority);
+poeOpResult poePortGetPowerConsumption(uint32_t frontPanelIndex, sai_poe_port_power_consumption_t *powerConsumptionPtr);
+poeOpResult poePortGetStatus (uint32_t frontPanelIndex, uint32_t *statusPtr);
 uint16_t swap16(uint16_t value);
 uint32_t swap32(uint32_t value);
+
 
 typedef struct {
     bool is_poe_device_initialized;
 } global_poe;
+
 
 #endif /** __POE_V3_H_ */
