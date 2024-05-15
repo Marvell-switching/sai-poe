@@ -503,7 +503,7 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
  * @return #SAI_STATUS_SUCCESS if operation is successful otherwise a different
  *    error code is returned.
  */
-static sai_status_t create_poe_port(_Out_ sai_object_id_t      *poe_port_id,
+static sai_status_t create_poe_port(_Out_ sai_object_id_t           *poe_port_id,
                                          _In_ sai_object_id_t        switch_id,
                                          _In_ uint32_t               attr_count,
                                          _In_ const sai_attribute_t *attr_list)

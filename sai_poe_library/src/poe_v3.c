@@ -26,12 +26,15 @@
 #include <h/sai/saipoe.h>
 #include <h/ipc_drv.h>
 
+/* include global variables */
+/* board info from external file */
 static PDL_FEATURE_DATA_STC        *boardInfoDbPtr;
+/* xml data root ID */
 static XML_PARSER_ROOT_DESCRIPTOR_TYP   xmlRootId;
-
-/* global databases */
+/* dictionaries for each PoE database */
 Dictionary *deviceDbPtr = NULL, *pseDbPtr = NULL, *portDbPtr = NULL;
-poeV3MsgSysPowerBank powerBankList = {0};
+/* power banks in system */
+POE_V3_MSG_SYS_POWER_BANK_STC powerBankList = {0};
 /* lock critical sections when reading/writing */
 rwlock_excl_t lock;
 
@@ -39,7 +42,7 @@ rwlock_excl_t lock;
  * @brief Debug callback
  * 
  * @param[in] funcNamePtr function name pointer
- * @param[in] format
+ * @param[in] format string format
  * 
  * @return void
  */
@@ -243,10 +246,10 @@ bool boardInfoDbNumOfEntriesGet (
 /**
  * @brief Initialize a database for each of the objects (device/pse/port)
  *
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult databaseInitialize() 
+POE_OP_RESULT_ENT databaseInitialize() 
 {
     uint64_t key;
     uint32_t numOfEntries = 1, index = 0;
@@ -254,21 +257,21 @@ poeOpResult databaseInitialize()
     PDL_PSEPORT_LIST_PARAMS_STC *pseportList_PTR = NULL;
     PDL_POEBANK_LIST_PARAMS_STC *powerBanksListPtr = NULL;
     bool getNext = TRUE;
-    poeOpResult result = poeOpOk;
+    POE_OP_RESULT_ENT result = POE_OP_OK_E;
     
     /* create dictionary for the poe device */
     deviceDbPtr = create_dictionary(numOfEntries);
     if(!deviceDbPtr) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to create poe device dictionary");
         goto exit;
     }
     
     /* set key value and update dictionary, there will be one poe device object */
-    poeDeviceDb *deviceDbEntryPtr = (poeDeviceDb*)malloc(sizeof(poeDeviceDb));
+    POE_DEVICE_DB_STC *deviceDbEntryPtr = (POE_DEVICE_DB_STC*)malloc(sizeof(POE_DEVICE_DB_STC));
     
     if(!deviceDbEntryPtr) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to read NULL entry");
         goto exit;
     }
@@ -276,21 +279,21 @@ poeOpResult databaseInitialize()
     key = deviceDbEntryPtr->deviceId = 0;
 
     if(!dict_put(deviceDbPtr, key, (void*)(deviceDbEntryPtr))) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to insert into poe device dictionary");
         goto exit;
     }
 
     /* get the number of pse devices, and create the dictionary for the poe pse list */
     if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pselist.pseList_PTR, &numOfEntries)) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
 
     pseDbPtr = create_dictionary(numOfEntries);
     if(!pseDbPtr) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to create poe pse dictionary");
         goto exit;
     }
@@ -300,10 +303,10 @@ poeOpResult databaseInitialize()
 
     /* for each pse, set key value and update dictionary */
     while(getNext) {
-        poePseDb *pseDbEntryPtr = (poePseDb*)malloc(sizeof(poePseDb));
+        POE_PSE_DB *pseDbEntryPtr = (POE_PSE_DB*)malloc(sizeof(POE_PSE_DB));
 
         if(!pseDbEntryPtr) {
-            result = poeOpFailed;
+            result = POE_OP_FAILED_E;
             LOG_ERROR("failed to read NULL entry");
             goto exit;
         }
@@ -311,7 +314,7 @@ poeOpResult databaseInitialize()
         key = pseDbEntryPtr->pseId = pseListPtr->list_keys.pseNumber;
 
         if(!dict_put(pseDbPtr, key, (void*)(pseDbEntryPtr))) {
-            result = poeOpFailed;
+            result = POE_OP_FAILED_E;
             LOG_ERROR("failed to insert into poe device dictionary");
             goto exit;
         }
@@ -322,20 +325,20 @@ poeOpResult databaseInitialize()
 
     /* get the number of poe ports, and create the dictionary for the poe port list */
     if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pseports.pseportList_PTR, &numOfEntries)) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
 
     portDbPtr = create_dictionary(numOfEntries);
     if(!portDbPtr) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to create poe port dictionary");
         goto exit;
     }
 
     if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pselist.pseList_PTR, &numOfEntries)) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
@@ -345,10 +348,10 @@ poeOpResult databaseInitialize()
 
     /* for each port, set key value and update dictionary */
     while(getNext) {
-        poePortDb *portDbEntryPtr = (poePortDb*)malloc(sizeof(poePortDb));
+        POE_PORT_DB_STC *portDbEntryPtr = (POE_PORT_DB_STC*)malloc(sizeof(POE_PORT_DB_STC));
 
         if(!portDbEntryPtr) {
-            result = poeOpFailed;
+            result = POE_OP_FAILED_E;
             LOG_ERROR("failed to read NULL entry");
             goto exit;
         }
@@ -356,10 +359,10 @@ poeOpResult databaseInitialize()
         key = portDbEntryPtr->frontPanelIndex = pseportList_PTR->list_keys.frontPanelPortIndex;
         switch (pseportList_PTR->portType) {
             case PDL_PSEPORT_TYPE_AT_E:
-                portDbEntryPtr->portStandard = poePortHwTypeAt;
+                portDbEntryPtr->portStandard = POE_PORT_HW_TYPE_AT_E;
                 break;
             case PDL_PSEPORT_TYPE_BT_TYPE3_E:
-                portDbEntryPtr->portStandard = poePortHwTypeBt3;
+                portDbEntryPtr->portStandard = POE_PORT_HW_TYPE_BT3_E;
                 break;
         }
 
@@ -367,7 +370,7 @@ poeOpResult databaseInitialize()
         portDbEntryPtr->physicalIndexB = pseportList_PTR->index2;
 
         if(!dict_put(portDbPtr, key, (void*)(portDbEntryPtr))) {
-            result = poeOpFailed;
+            result = POE_OP_FAILED_E;
             LOG_ERROR("failed to insert into poe device dictionary");
             goto exit;
         }
@@ -378,7 +381,7 @@ poeOpResult databaseInitialize()
 
     /* get the number of power banks, and update the power bank list */
     if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.poePowerBanks.poebankList_PTR, &numOfEntries)) {
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
@@ -401,10 +404,10 @@ exit:
 /**
  * @brief init poe firmware
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-static poeOpResult poeInitFw ()
+static POE_OP_RESULT_ENT poeInitFw ()
 {
 
     ExthwgPoeIpcMcuTypeEnt                 exhw_mcuType=ExthwgPoeIpcMcuTypeCm3;
@@ -413,7 +416,7 @@ static poeOpResult poeInitFw ()
     int32_t                                     time_before, time_after;
 
     if ((boardInfoDbPtr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_POE_NOT_SUPPORTED_E) || (boardInfoDbPtr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_LAST_E)){
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     /*** Default download: assuming transport is IPc - 
@@ -443,24 +446,24 @@ static poeOpResult poeInitFw ()
         // not supported
     }
     else {
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     exthwgPoeIpcRemoveFwFlagLoaded();
     
-    return poeOpOk;
+    return POE_OP_OK_E;
 }
 
 /**
  * @brief Download poe firmware
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-static poeOpResult poeDownloadFw ()
+static POE_OP_RESULT_ENT poeDownloadFw ()
 {
 
     ExthwgPoeIpcMcuTypeEnt                      exhw_mcuType=ExthwgPoeIpcMcuTypeCm3;
@@ -490,42 +493,42 @@ static poeOpResult poeDownloadFw ()
         // not supported
     }
     else {
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
 
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     sleep(1);// poe_wait(poe_wait_692xx_DownloadFirmwareComplete_E);
     
-    return poeOpOk;
+    return POE_OP_OK_E;
 
 }
 
 /**
  * @brief General initialize a for the shared memory protocol
  *
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult sharedMemoryInitialize() {
+POE_OP_RESULT_ENT sharedMemoryInitialize() {
     
     poeInitFw();
 
     poeDownloadFw();
 
-    return poeOpOk;
+    return POE_OP_OK_E;
 }
 
 /**
  * @brief Initialize board info, to receive board specific parameters
  *
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult boardInfoInitialize() {
+POE_OP_RESULT_ENT boardInfoInitialize() {
     char            profileFile[100];
     char            fileName[100];
     PDL_STATUS                                      status;
@@ -548,39 +551,39 @@ poeOpResult boardInfoInitialize() {
     status = pdlibInit((char *)fullPath, (char *)"saiplt", &callbacks, &xmlRoot);
     if(status != PDL_OK) {
         LOG_ERROR("failed to initialize pdlib");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     status = prvPdlCodeParser(xmlRoot);
     if(status != PDL_OK) {
         LOG_ERROR("failed to initialize code parser");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     status = prvPdlFeaturesDataHandler();
     if(status != PDL_OK) {
         LOG_ERROR("failed to set feature data handler");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     status = prvPdlFeaturesDataGet(&boardInfoDbPtr);
     if(status != PDL_OK) {
         LOG_ERROR("failed to get feature data");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
-    return poeOpOk;
+    return POE_OP_OK_E;
 }
 
 /**
  * @brief General initialize for all the PoE components
  *
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poeInitialize(void) {
+POE_OP_RESULT_ENT poeInitialize(void) {
     
-    poeOpResult result = poeOpOk;
+    POE_OP_RESULT_ENT result = POE_OP_OK_E;
     /* init semaphore */
     rwlock_excl_init(&lock);
 
@@ -589,42 +592,42 @@ poeOpResult poeInitialize(void) {
     /* init board info (from external db) */
     result = boardInfoInitialize();
     
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize board info");
         goto exit;
     }
 
     /* init databases */
     result = databaseInitialize();
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize databases");
         goto exit;
     }
 
     /* init shared memory */
     result = sharedMemoryInitialize();
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize shared memory");
         goto exit;
     }
 
     /* set poe power banks */
     result = poePowerBankInitialize();
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize power");
         goto exit;
     }
 
     /* set poe port matrix */
     result = poePortMatrixInitialize();
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize port matrix");
         goto exit;
     }
 
     /* set poe port standard */
     result = poePortStandardInitialize();
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize port standard");
         goto exit;
     }
@@ -676,14 +679,14 @@ bool poePortGetNextIndex(uint32_t *frontPanelIndex) {
  *
  * @param[in] frontPanelIndex front panel index
  * 
- * @return #poePortHwType_t if operation is successful otherwise poePortHwTypeInvalid
+ * @return #return HW type
  *
  */
-poePortHwType poeGetPortPoeHwType(uint32_t frontPanelIndex) { 
-    poePortDb *valuePtr = (poePortDb*)dict_get(portDbPtr, (uint64_t)frontPanelIndex);
+POE_PORT_HW_TYPE_ENT poeGetPortPoeHwType(uint32_t frontPanelIndex) { 
+    POE_PORT_DB_STC *valuePtr = (POE_PORT_DB_STC*)dict_get(portDbPtr, (uint64_t)frontPanelIndex);
 
     if(valuePtr == NULL) {
-        return poePortHwTypeInvalid;
+        return POE_PORT_HW_TYPE_INVALID_E;
     }
 
     return valuePtr->portStandard;
@@ -699,7 +702,7 @@ poePortHwType poeGetPortPoeHwType(uint32_t frontPanelIndex) {
  *
  */
 bool poePortGetPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex) {
-    poePortDb *valuePtr = (poePortDb*)dict_get(portDbPtr, (uint64_t)frontPanelIndex);
+    POE_PORT_DB_STC *valuePtr = (POE_PORT_DB_STC*)dict_get(portDbPtr, (uint64_t)frontPanelIndex);
 
     if(valuePtr == NULL) {
         return false;
@@ -720,7 +723,7 @@ bool poePortGetPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex) 
  *
  */
 bool poePortGetSecondPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex) {
-    poePortDb *valuePtr = (poePortDb*)dict_get(portDbPtr, (uint64_t)frontPanelIndex);
+    POE_PORT_DB_STC *valuePtr = (POE_PORT_DB_STC*)dict_get(portDbPtr, (uint64_t)frontPanelIndex);
 
     if(valuePtr == NULL) {
         return false;
@@ -734,49 +737,49 @@ bool poePortGetSecondPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalI
 /**
  * @brief Intialize port matrix
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortMatrixInitialize() {
+POE_OP_RESULT_ENT poePortMatrixInitialize() {
     uint32_t                          physicalNumberA, physicalNumberB, frontPanelIndex, index = 0;
-    poePortHwType               poePortHwType;
-    poeV3MsgSysPortMatrix setMatrixParams;
+    POE_PORT_HW_TYPE_ENT               poePortHwType;
+    POE_V3_MSG_SYS_PORT_MATRIX_STC setMatrixParams;
     bool getNext = true;
 
     /* clean matrix params */
-    memset(&setMatrixParams, 0xff, sizeof(poeV3MsgSysPortMatrix));
+    memset(&setMatrixParams, 0xff, sizeof(POE_V3_MSG_SYS_PORT_MATRIX_STC));
     
     /* for every front panel (logical) poe port in the device, set the correct physical port */
     if(!poePortGetFirstIndex(&frontPanelIndex)) {
         LOG_ERROR("failed to get first index");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     while (getNext) {
 
         poePortHwType = poeGetPortPoeHwType(frontPanelIndex);
 
-        if(poePortHwType == poePortHwTypeInvalid) {
+        if(poePortHwType == POE_PORT_HW_TYPE_INVALID_E) {
             LOG_ERROR("failed to get valid poe type");
-            return poeOpFailed;
+            return POE_OP_FAILED_E;
         }
 
          if(!poePortGetPhysicalIndex(frontPanelIndex, &physicalNumberA)) {
             LOG_ERROR("failed to get physical index");
-            return poeOpFailed;
+            return POE_OP_FAILED_E;
          }
 
         setMatrixParams.physicLogicalPair[index].logicalPort = (uint8_t)frontPanelIndex;
         setMatrixParams.physicLogicalPair[index++].physPort = (uint8_t)physicalNumberA;
                 
         /* if the port supports two channels, set the second physical port */
-        if ((poePortHwType == poePortHwType60W) ||
-            (poePortHwType == poePortHwTypeBt3) ||
-            (poePortHwType == poePortHwTypeBt4)) {
+        if ((poePortHwType == POE_PORT_HW_TYPE_60W_E) ||
+            (poePortHwType == POE_PORT_HW_TYPE_BT3_E) ||
+            (poePortHwType == POE_PORT_HW_TYPE_BT4_E)) {
             
             if(!poePortGetSecondPhysicalIndex(frontPanelIndex, &physicalNumberB)) {
                 LOG_ERROR("failed to get second index");
-                return poeOpFailed;
+                return POE_OP_FAILED_E;
             }
 
             setMatrixParams.physicLogicalPair[index].logicalPort = (uint8_t)frontPanelIndex;
@@ -788,15 +791,15 @@ poeOpResult poePortMatrixInitialize() {
     
     if (index) {
         return poeV3SendReceiveMsg(
-            poeV3MsgLevelSystem, 
-            poeV3MsgDirSet,
-            poeV3SysMsgPortMatrix,
+            POE_V3_MSG_LEVEL_SYSTEM, 
+            POE_V3_MSG_DIR_SET,
+            POE_V3_SYS_MSG_PORT_MATRIX,
             sizeof(setMatrixParams),
             (uint8_t*)&setMatrixParams);
     } 
 
     LOG_ERROR("failed to get entries");
-    return poeOpFailed;
+    return POE_OP_FAILED_E;
 }
 
 /**
@@ -811,11 +814,11 @@ poeOpResult poePortMatrixInitialize() {
  * @return #true if operation is successful otherwise false
  *
  */
-poeOpResult poeV3SendReceiveMsg (
+POE_OP_RESULT_ENT poeV3SendReceiveMsg (
 
     /*!     INPUTS:             */    
-    poeV3MsgLevel        msgLevel,
-    poeV3MsgDirection    direction,
+    POE_V3_MSG_LEVEL        msgLevel,
+    POE_V3_MSG_DIRECTION    direction,
     uint16_t                                 msgId,
     uint8_t                                  dataLen,
     /*!     INPUTS / OUTPUTS:   */
@@ -824,40 +827,40 @@ poeOpResult poeV3SendReceiveMsg (
 )
 {
     uint8_t  *buf_ptr;
-    bool send=(direction==poeV3MsgDirGet)?false:true;
-    poeV3MsgOpCode op_code;
+    bool send=(direction==POE_V3_MSG_DIR_GET)?false:true;
+    POE_V3_MSG_OP_CODE_STC op_code;
 
     poeV3SetMsgOpCodeMac(op_code, msgLevel, direction, msgId);
     buf_ptr = (uint8_t*)dataPtr;
     if (true != exthwgPoeIpcSendReceiveMsg(send, op_code.opCodeNum32, dataLen, buf_ptr)) {
         LOG_ERROR("failed to send/recieve poe message, msg id %d, direction %d, op code: %d, level %d", msgId, direction, op_code.opCodeNum32, msgLevel);
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     /* TEMP - return 11 for all data  */
     memset(dataPtr, 11, sizeof(uint8_t));
 
-    return poeOpOk;
+    return POE_OP_OK_E;
 } 
 
 /**
  * @brief Intialize port standard
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortStandardInitialize() {
+POE_OP_RESULT_ENT poePortStandardInitialize() {
     uint32_t                          frontPanelIndex, index = 0;
-    poePortHwType      poePortHwType, systemHwCapability;
-    poeV3MsgSysPortSupportedStd portStandardParams;
-    poeOpResult status;
+    POE_PORT_HW_TYPE_ENT      poePortHwType, systemHwCapability;
+    POE_V3_MSG_SYS_PORT_SUPPORTED_STD_STC portStandardParams;
+    POE_OP_RESULT_ENT status;
     bool getNext = true;
 
-    memset(&portStandardParams, 0xff, sizeof(poeV3MsgSysPortSupportedStd));
+    memset(&portStandardParams, 0xff, sizeof(POE_V3_MSG_SYS_PORT_SUPPORTED_STD_STC));
     
     if(!poePortGetFirstIndex(&frontPanelIndex)) {
         LOG_ERROR("failed to get first index");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     while (getNext) {
@@ -871,9 +874,9 @@ poeOpResult poePortStandardInitialize() {
     }
 
     return poeV3SendReceiveMsg(
-            poeV3MsgLevelSystem, 
-            poeV3MsgDirSet,
-            poeV3SysMsgPortSupportStandard,
+            POE_V3_MSG_LEVEL_SYSTEM, 
+            POE_V3_MSG_DIR_SET,
+            POE_V3_SYS_MSG_PORT_SUPPORT_STANDARD,
             sizeof(portStandardParams),
             (uint8_t*)&portStandardParams);
 }
@@ -881,21 +884,21 @@ poeOpResult poePortStandardInitialize() {
 /**
  * @brief Intialize power banks
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePowerBankInitialize() {
+POE_OP_RESULT_ENT poePowerBankInitialize() {
     uint32_t index = 0;
-    poeV3MsgSysPowerBank powerBankParams;
+    POE_V3_MSG_SYS_POWER_BANK_STC powerBankParams;
 
-    for (index = 0; index < poeMaxNumOfPowerBanks ; index++) {
+    for (index = 0; index < POE_MAX_NUM_OF_POWER_BANKS ; index++) {
         powerBankParams.powerBankWSwap[index] = swap16(powerBankList.powerBankWSwap[index]); 
     }
     
     return poeV3SendReceiveMsg(
-            poeV3MsgLevelSystem, 
-            poeV3MsgDirSet,
-            poeV3SysMsgPowerBankConfig,
+            POE_V3_MSG_LEVEL_SYSTEM, 
+            POE_V3_MSG_DIR_SET,
+            POE_V3_SYS_MSG_POWER_BANK_CONFIG,
             sizeof(powerBankParams),
             (uint8_t*)&powerBankParams);
 }
@@ -906,21 +909,21 @@ poeOpResult poePowerBankInitialize() {
  * @param[in] poeDevNum device number
  * @param[out] totalPowerMwPtr total power in milliwatts
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poeDevGetTotalPower (
+POE_OP_RESULT_ENT poeDevGetTotalPower (
     /*!     INPUTS:             */
     int32_t poeDevNum, 
     int32_t *totalPowerMwPtr
 )
 {
-    poeV3MsgSysPowerConsumption powerConsumptionParams;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_POWER_CONSUMPTION_STC powerConsumptionParams;
+    POE_OP_RESULT_ENT result; 
 
     if(totalPowerMwPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
@@ -938,29 +941,29 @@ poeOpResult poeDevGetTotalPower (
  * @param[in] poeDevNum device number
  * @param[out] totalPowerMwPtr active power consumption in milliwatts
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poeDevGetPowerConsumption (
+POE_OP_RESULT_ENT poeDevGetPowerConsumption (
     /*!     INPUTS:             */
     int32_t poeDevNum, 
     int32_t *powerConsumptionMwPtr
 )
 {
-    poeV3MsgSysPowerConsumption powerConsumptionParams;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_POWER_CONSUMPTION_STC powerConsumptionParams;
+    POE_OP_RESULT_ENT result; 
 
     if(powerConsumptionMwPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
     
     memset(&powerConsumptionParams, 0, sizeof(powerConsumptionParams));
-    result = poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgPowerConsumption, sizeof(powerConsumptionParams), (UINT_8*)&powerConsumptionParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_POWER_CONSUMPTION, sizeof(powerConsumptionParams), (UINT_8*)&powerConsumptionParams);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         *powerConsumptionMwPtr = (swap32(powerConsumptionParams.powerConsumptionSwap)) + 0.5;
     }
     else {
@@ -978,30 +981,30 @@ poeOpResult poeDevGetPowerConsumption (
  * @param[in] poeDevNum device number
  * @param[out] versionPtr frimware version
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poeDevGetVersion (
+POE_OP_RESULT_ENT poeDevGetVersion (
     /*!     INPUTS:             */
     int32_t poeDevNum, 
     char *versionPtr
 )
 {
-    poeV3MsgSysSystemVersion *versionParamsPtr;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_SYSTEM_VERSION_STC *versionParamsPtr;
+    POE_OP_RESULT_ENT result; 
 
     if(versionPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
-    memset(versionParamsPtr, 0, sizeof(poeV3MsgSysSystemVersion));
+    memset(versionParamsPtr, 0, sizeof(POE_V3_MSG_SYS_SYSTEM_VERSION_STC));
     memset(versionParamsPtr->pseVersionData, 0xFF, sizeof(versionParamsPtr->pseVersionData));
-    result = poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgSystemVersion, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_SYSTEM_VERSION, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         snprintf (versionPtr, 20, "%d.%d.%d.%d", 
                     versionParamsPtr->poeFwVersion.verBytes[0],
                     versionParamsPtr->poeFwVersion.verBytes[1],
@@ -1023,30 +1026,30 @@ poeOpResult poeDevGetVersion (
  * @param[in] poeDevNum device number
  * @param[out] powerLimitPtr power limit
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poeDevGetPowerLimitMode (
+POE_OP_RESULT_ENT poeDevGetPowerLimitMode (
     /*!     INPUTS:             */
     uint32_t poeDevNum, 
     uint32_t *powerLimitPtr
 )
 {
-    poeV3MsgSysPowerLimitMode limitModeParams;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC limitModeParams;
+    POE_OP_RESULT_ENT result; 
 
     if(powerLimitPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
-    memset(&limitModeParams, 0, sizeof(poeV3MsgSysPowerLimitMode));
+    memset(&limitModeParams, 0, sizeof(POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC));
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgPowerLimitMode, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_POWER_LIMIT_MODE, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         *powerLimitPtr = (uint32_t)limitModeParams.limitMode;
     }
     else {
@@ -1064,31 +1067,31 @@ poeOpResult poeDevGetPowerLimitMode (
  * @param[in] poeDevNum device number
  * @param[out] powerLimitPtr power limit
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poeDevSetPowerLimitMode (
+POE_OP_RESULT_ENT poeDevSetPowerLimitMode (
     /*!     INPUTS:             */
     uint32_t poeDevNum, 
     uint32_t powerLimitPtr
 )
 {
-    poeV3MsgSysPowerLimitMode limitModeParams;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC limitModeParams;
+    POE_OP_RESULT_ENT result; 
 
     if(powerLimitPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
-    memset(&limitModeParams, 0, sizeof(poeV3MsgSysPowerLimitMode));
-    limitModeParams.limitMode = (poeV3PowerLimitMode)powerLimitPtr;
+    memset(&limitModeParams, 0, sizeof(POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC));
+    limitModeParams.limitMode = (POWER_LIMIT_MODE)powerLimitPtr;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirSet, poeV3SysMsgPowerLimitMode, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_SET, POE_V3_SYS_MSG_POWER_LIMIT_MODE, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
 
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to get data");
     }
 
@@ -1103,30 +1106,30 @@ poeOpResult poeDevSetPowerLimitMode (
  * @param[in] poePseNum pse number
  * @param[out] versionPtr pse software version
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePseGetSoftwareVersion (
+POE_OP_RESULT_ENT poePseGetSoftwareVersion (
     /*!     INPUTS:             */
     int32_t poePseNum, 
     char *versionPtr
 )
 {
-    poeV3MsgSysSystemVersion *versionParamsPtr;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_SYSTEM_VERSION_STC *versionParamsPtr;
+    POE_OP_RESULT_ENT result; 
 
     if(versionPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
-    memset(versionParamsPtr, 0, sizeof(poeV3MsgSysSystemVersion));
+    memset(versionParamsPtr, 0, sizeof(POE_V3_MSG_SYS_SYSTEM_VERSION_STC));
     memset(versionParamsPtr->pseVersionData, 0xFF, sizeof(versionParamsPtr->pseVersionData));
-    result = poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgSystemVersion, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_SYSTEM_VERSION, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         snprintf (versionPtr, 20, "%d.%d.%d.%d",
                     versionParamsPtr->poeFwVersion.verBytes[0],
                     versionParamsPtr->poeFwVersion.verBytes[1],
@@ -1148,37 +1151,37 @@ poeOpResult poePseGetSoftwareVersion (
  * @param[in] poePseNum PSE number
  * @param[out] versionPtr PSE software version
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePseGetHardwareVersion (
+POE_OP_RESULT_ENT poePseGetHardwareVersion (
     /*!     INPUTS:             */
     int32_t poePseNum, 
     char *versionPtr
 )
 {
-    poeV3MsgSysSystemVersion *versionParamsPtr;
-    poeOpResult result;
+    POE_V3_MSG_SYS_SYSTEM_VERSION_STC *versionParamsPtr;
+    POE_OP_RESULT_ENT result;
     char prefix[12] ={0};
 
     if(versionPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
-    memset(versionParamsPtr, 0, sizeof(poeV3MsgSysSystemVersion));
+    memset(versionParamsPtr, 0, sizeof(POE_V3_MSG_SYS_SYSTEM_VERSION_STC));
     memset(versionParamsPtr->pseVersionData, 0xFF, sizeof(versionParamsPtr->pseVersionData));
-    result = poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgSystemVersion, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_SYSTEM_VERSION, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         switch(versionParamsPtr->pseVersionData[poePseNum].pseHwVersion) {
-            case poeV3DevHwVersionLtc4291:
+            case POE_V3_DEV_HW_VERSION_LTC4291:
                 strcat(prefix, "LTC4291"); /* bt */
                 break;     
             default:
-                result = poeOpFailed;
+                result = POE_OP_FAILED_E;
                 break;
         }
 
@@ -1199,30 +1202,30 @@ poeOpResult poePseGetHardwareVersion (
  * @param[in] poePseNum PSE number
  * @param[out] temperature PSE temperature
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePseGetTemperature (
+POE_OP_RESULT_ENT poePseGetTemperature (
     /*!     INPUTS:             */
     int32_t poePseNum, 
     int16_t *temperaturePtr
 )
 {
-    poeV3MsgSysPseTemperature temperatureParams;
-    poeOpResult result; 
+    POE_V3_MSG_SYS_PSE_TEMPERATURE_STC temperatureParams;
+    POE_OP_RESULT_ENT result; 
 
     if(temperaturePtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
     memcpy(temperatureParams.pseTempSwap, 0, sizeof(temperatureParams.pseTempSwap));
 
-    poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgPseTemperature, sizeof(temperatureParams), (uint8_t*)&temperatureParams);
+    poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_PSE_TEMPERATURE, sizeof(temperatureParams), (uint8_t*)&temperatureParams);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         *temperaturePtr = swap16(temperatureParams.pseTempSwap[poePseNum]);
     }
     else {
@@ -1240,17 +1243,17 @@ poeOpResult poePseGetTemperature (
  * @param[in] poePseNum PSE number
  * @param[out] *status PSE status
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePseGetStatus (
+POE_OP_RESULT_ENT poePseGetStatus (
     /*!     INPUTS:             */
     int32_t poePseNum, 
     int16_t *statusPtr
 )
 {
-    poeV3MsgSysPseStatus systemStatusParams;
-    poeOpResult result;
+    POE_V3_MSG_SYS_PSE_STATUS_STC systemStatusParams;
+    POE_OP_RESULT_ENT result;
 
     /* Convert v3 POE PSE status values to SAI */
     sai_poe_pse_status_t convertStatusToSai[]={
@@ -1261,17 +1264,17 @@ poeOpResult poePseGetStatus (
 
     if(statusPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock); 
 
     memset(&systemStatusParams, 0, sizeof(systemStatusParams));
-    poeV3SendReceiveMsg(poeV3MsgLevelSystem, poeV3MsgDirGet, poeV3SysMsgPseStatus, sizeof(systemStatusParams), (uint8_t*)&systemStatusParams);
+    poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_PSE_STATUS, sizeof(systemStatusParams), (uint8_t*)&systemStatusParams);
 
-    if(result == poeOpOk) {
-        if (systemStatusParams.pseStatus[poePseNum] == poeV3PseStatusNotPresent || 
-            systemStatusParams.pseStatus[poePseNum] > poeV3PseStatusI2cFailure)
+    if(result == POE_OP_OK_E) {
+        if (systemStatusParams.pseStatus[poePseNum] == POE_V3_PSE_STATUS_NOT_PRESENT || 
+            systemStatusParams.pseStatus[poePseNum] > POE_V3_PSE_STATUS_I2C_FAILURE)
             *statusPtr = SAI_POE_PSE_STATUS_TYPE_NOT_PRESENT;
         else {
             *statusPtr = convertStatusToSai[systemStatusParams.pseStatus[poePseNum]];
@@ -1292,28 +1295,28 @@ poeOpResult poePseGetStatus (
  * @param[in] frontPanelIndex Front panel index
  * @param[out] enable Enable/disable
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortGetPortStandard (
+POE_OP_RESULT_ENT poePortGetPortStandard (
     uint32_t frontPanelIndex,
     bool *portStandardPtr
 )
 {
-    poeOpResult result;
+    POE_OP_RESULT_ENT result;
 
     if(portStandardPtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock);  
 
     *portStandardPtr = poeGetPortPoeHwType(frontPanelIndex);
 
-    if(*portStandardPtr == poePortHwTypeInvalid) {
+    if(*portStandardPtr == POE_PORT_HW_TYPE_INVALID_E) {
         LOG_ERROR("failed to get port standard");
-        result = poeOpFailed;
+        result = POE_OP_FAILED_E;
     }
 
     rwlock_excl_release(&lock);
@@ -1327,26 +1330,26 @@ poeOpResult poePortGetPortStandard (
  * @param[in] frontPanelIndex Front panel index
  * @param[in] enable Enable/disable
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortSetAdminEnable (
+POE_OP_RESULT_ENT poePortSetAdminEnable (
     uint32_t frontPanelIndex,
     const bool enable
 )
 {
-    poeV3MsgPortEnable portParams;
-    poeOpResult result; 
+    POE_V3_MSG_PORT_ENABLE_STC portParams;
+    POE_OP_RESULT_ENT result; 
 
     rwlock_excl_acquire(&lock); 
 
-    memset(&portParams, 0, sizeof(poeV3MsgPortEnable));
+    memset(&portParams, 0, sizeof(POE_V3_MSG_PORT_ENABLE_STC));
     portParams.logicPortNum = (uint8_t)frontPanelIndex;
-    portParams.portAdminEnableDisable = (enable==true)?poeV3PortAdminEnableCns:poeV3PortAdminDisableCns;
+    portParams.portAdminEnableDisable = (enable==true)?POE_V3_PORT_ADMIN_ENABLE_CNS:POE_V3_PORT_ADMIN_DISABLE_CNS;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirSet, poeV3PortMsgPortEnableCns, sizeof(portParams), (uint8_t*)&portParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_SET, POE_V3_PORT_MSG_PORT_ENABLE_CNS, sizeof(portParams), (uint8_t*)&portParams);
 
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
 
@@ -1361,30 +1364,30 @@ poeOpResult poePortSetAdminEnable (
  * @param[in] frontPanelIndex Front panel index
  * @param[out] enable Enable/disable
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortGetAdminEnable (
+POE_OP_RESULT_ENT poePortGetAdminEnable (
     uint32_t frontPanelIndex,
     bool *enablePtr
 )
 {
-    poeV3MsgPortEnable portParams;
-    poeOpResult result;
+    POE_V3_MSG_PORT_ENABLE_STC portParams;
+    POE_OP_RESULT_ENT result;
 
     if(enablePtr == NULL) {
         LOG_ERROR("invalid pointer");
-        return poeOpFailed;
+        return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&lock);  
 
-    memset(&portParams, 0, sizeof(poeV3MsgPortEnable));
+    memset(&portParams, 0, sizeof(POE_V3_MSG_PORT_ENABLE_STC));
     portParams.logicPortNum = (uint8_t)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirGet, poeV3PortMsgPortEnableCns, sizeof(portParams), (uint8_t*)&portParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_PORT_MSG_PORT_ENABLE_CNS, sizeof(portParams), (uint8_t*)&portParams);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         *enablePtr = portParams.portAdminEnableDisable;
     }
 
@@ -1399,25 +1402,25 @@ poeOpResult poePortGetAdminEnable (
  * @param[in] frontPanelIndex Front panel index
  * @param[in] powerLimit Power limit
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortSetPowerLimit (
+POE_OP_RESULT_ENT poePortSetPowerLimit (
     uint32_t frontPanelIndex,
     const uint32_t powerLimit
 )
 {
-    poeV3MsgPortPowerLimit powerLimitParams;
-    poeOpResult result; 
+    POE_V3_MSG_PORT_POWER_LIMIT_STC powerLimitParams;
+    POE_OP_RESULT_ENT result; 
 
     rwlock_excl_acquire(&lock); 
 
     powerLimitParams.logicPortNum = (UINT_8)frontPanelIndex;
     powerLimitParams.powerLimitMwSwap = swap32(powerLimit);
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirSet, poeV3PortMsgPortPowerLimitCns, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_SET, POE_V3_PORT_MSG_PORT_POWER_LIMIT_CNS, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
 
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
 
@@ -1432,25 +1435,25 @@ poeOpResult poePortSetPowerLimit (
  * @param[in] frontPanelIndex Front panel index
  * @param[in] powerLimit Power limit
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortGetPowerLimit (
+POE_OP_RESULT_ENT poePortGetPowerLimit (
     uint32_t frontPanelIndex,
     uint32_t *powerLimitPtr
 )
 {
-    poeV3MsgPortPowerLimit powerLimitParams;
-    poeOpResult result; 
+    POE_V3_MSG_PORT_POWER_LIMIT_STC powerLimitParams;
+    POE_OP_RESULT_ENT result; 
 
     rwlock_excl_acquire(&lock); 
 
     memset(&powerLimitParams, 0, sizeof(powerLimitParams));
     powerLimitParams.logicPortNum = (UINT_8)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirGet, poeV3PortMsgPortPowerLimitCns, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_PORT_MSG_PORT_POWER_LIMIT_CNS, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         *powerLimitPtr = swap32(powerLimitParams.powerLimitMwSwap);
     }
 
@@ -1465,25 +1468,25 @@ poeOpResult poePortGetPowerLimit (
  * @param[in] frontPanelIndex Front panel index
  * @param[in] powerLimit Power limit
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortSetPowerPriority (
+POE_OP_RESULT_ENT poePortSetPowerPriority (
     uint32_t frontPanelIndex,
     const uint32_t powerPriority
 )
 {
-    poeV3MsgPortPriority portPriorityParams;
-    poeOpResult result; 
+    POE_V3_MSG_PORT_PRIORITY_STC portPriorityParams;
+    POE_OP_RESULT_ENT result; 
 
     rwlock_excl_acquire(&lock); 
 
     portPriorityParams.logicPortNum = (UINT_8)frontPanelIndex;
     portPriorityParams.portPriority = powerPriority;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirSet, poeV3PortMsgPortEnableCns, sizeof(portPriorityParams), (uint8_t*)&portPriorityParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_SET, POE_V3_PORT_MSG_PORT_PRIORITY_CNS, sizeof(portPriorityParams), (uint8_t*)&portPriorityParams);
 
-    if(result != poeOpOk) {
+    if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
 
@@ -1498,16 +1501,16 @@ poeOpResult poePortSetPowerPriority (
  * @param[in] frontPanelIndex Front panel index
  * @param[in] powerConsumptionPtr Power limit
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortGetPowerConsumption (
+POE_OP_RESULT_ENT poePortGetPowerConsumption (
     uint32_t frontPanelIndex,
     sai_poe_port_power_consumption_t *powerConsumptionPtr
 )
 {
-    poeV3MsgPortBtPowerConsumInfo powerConsumptionInfo;
-    poeOpResult result; 
+    POE_V3_MSG_PORT_BT_POWER_CONSUM_INFO_STC powerConsumptionInfo;
+    POE_OP_RESULT_ENT result; 
 
     /* Convert v3 POE active channel values to SAI */
     sai_poe_port_active_channel_type_t convertStatusToSai[]={
@@ -1536,9 +1539,9 @@ poeOpResult poePortGetPowerConsumption (
     memset(&powerConsumptionInfo, 0, sizeof(powerConsumptionInfo));
     powerConsumptionInfo.logicPortNum = (UINT_8)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirGet, poeV3PortMsgPowerConsumInfoCns, sizeof(powerConsumptionInfo), (uint8_t*)&powerConsumptionInfo);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_PORT_MSG_POWER_CONSUM_INFO_CNS, sizeof(powerConsumptionInfo), (uint8_t*)&powerConsumptionInfo);
 
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         powerConsumptionPtr->active_channel = convertStatusToSai[powerConsumptionInfo.activeChannel];
         powerConsumptionPtr->voltage = swap32(powerConsumptionInfo.voltVSwap);
         powerConsumptionPtr->current = swap32(powerConsumptionInfo.currentMaSwap);
@@ -1561,17 +1564,17 @@ sai_poe_port_status_t portHwStatusToDetectionStatus(portStatus)
     sai_poe_port_status_t detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;
 
     switch (portStatus) {                                                             
-        case poeV3PortStatusOffInDetection:                  
-        case poeV3PortStatusOffCapDetInvSig:               
+        case POE_V3_PORT_STATUS_OFF_IN_DETECTION:                  
+        case POE_V3_PORT_STATUS_OFF_CAP_DET_INV_SIG:               
             detectionStatus = SAI_POE_PORT_STATUS_TYPE_SEARCHING;       
             break;                                                                      
-        case poeV3PortStatusOnResDetect:                         
-        case poeV3PortStatusOnCapDetect:                         
-        case poeV3PortStatusOn4Pair:
-        case poeV3PortStatusOnNonStdBtdevice:                        
+        case POE_V3_PORT_STATUS_ON_RES_DETECT:                         
+        case POE_V3_PORT_STATUS_ON_CAP_DETECT:                         
+        case POE_V3_PORT_STATUS_ON_FORCE_4_PAIR:
+        case POE_V3_PORT_STATUS_ON_NON_STD_BTDEVICE:                        
             detectionStatus = SAI_POE_PORT_STATUS_TYPE_DELIVERING_POWER; 
             break;                                                                      
-        case poeV3PortStatusOffUserDisable:                      
+        case POE_V3_PORT_STATUS_OFF_USER_DISABLE:                      
             detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;        
             break;                                                                                                                                                                                                     
         default:                                                                        
@@ -1588,34 +1591,34 @@ sai_poe_port_status_t portHwStatusToDetectionStatus(portStatus)
  * @param[in] frontPanelIndex Front panel index
  * @param[in] statusPtr Port status
  * 
- * @return #poeOpOk if operation is successful otherwise a different
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-poeOpResult poePortGetStatus (
+POE_OP_RESULT_ENT poePortGetStatus (
     uint32_t frontPanelIndex,
     uint32_t *statusPtr
 )
 {
-    poeV3MsgPortStatus portStatusParams;
-    poeOpResult result;
-    poeV3PortStatus   portStatusA;
-    poeV3PortStatus   portStatusB;
+    POE_V3_MSG_PORT_STATUS_STC portStatusParams;
+    POE_OP_RESULT_ENT result;
+    POE_V3_PORT_STATUS   portStatusA;
+    POE_V3_PORT_STATUS   portStatusB;
     sai_poe_port_status_t    detectionStatusA;
     sai_poe_port_status_t    detectionStatusB;
-    poePortHwType hwType;
+    POE_PORT_HW_TYPE_ENT hwType;
 
     rwlock_excl_acquire(&lock); 
 
     memset(&portStatusParams, 0, sizeof(portStatusParams));
     portStatusParams.logicPortNum = (UINT_8)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(poeV3MsgLevelPort, poeV3MsgDirGet, poeV3PortMsgPortStatusCns, sizeof(portStatusParams), (uint8_t*)&portStatusParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_CAUSE_PORT_STATUS_CNS, sizeof(portStatusParams), (uint8_t*)&portStatusParams);
 
     /* Convert specific HW status, to generic output: off/delivering power/searching/fault */
-    if(result == poeOpOk) {
+    if(result == POE_OP_OK_E) {
         hwType = poeGetPortPoeHwType(frontPanelIndex);
         /* If HW type is not BT, get the ALT A status */
-        if((hwType != poePortHwTypeBt3) && (hwType != poePortHwTypeBt4)) {
+        if((hwType != POE_PORT_HW_TYPE_BT3_E) && (hwType != POE_PORT_HW_TYPE_BT4_E)) {
             *statusPtr = portHwStatusToDetectionStatus(portStatusParams.portStatusA);
         }
         {
@@ -1636,7 +1639,6 @@ poeOpResult poePortGetStatus (
 
     return result;
 }
-
 
 /**
  * @brief swap uint16_t
