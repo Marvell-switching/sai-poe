@@ -283,7 +283,7 @@ sai_status_t set_poe_device_attribute(
         _In_ sai_object_id_t poe_device_id, 
         _In_ const sai_attribute_t *attr)
 {
-    poe_op_result_t result; 
+    sai_status_t result; 
     uint32_t *internal_device_id_ptr = NULL;
 
     rwlock_excl_acquire(&lock);
@@ -301,7 +301,7 @@ sai_status_t set_poe_device_attribute(
     switch (attr->id)
     {
     case SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE:
-        result = poe_dev_set_power_limit_mode(*internal_device_id_ptr, attr->value.s32);
+        result = poeDevSetPowerLimitMode(*internal_device_id_ptr, attr->value.s32);
         break;
     default:
         break;
@@ -326,7 +326,7 @@ static sai_status_t get_poe_device_attribute(
         _In_ uint32_t              attr_count,
         _Inout_ sai_attribute_t   *attr_list)
 {
-    poe_op_result_t result;
+    sai_status_t result;
     uint32_t i = 0, *internal_device_id_ptr = NULL;
 
     /* switch case placeholder, may change to function pointers */
@@ -345,19 +345,20 @@ static sai_status_t get_poe_device_attribute(
         switch (attr_list[i].id)
         {
         case SAI_POE_DEVICE_ATTR_TOTAL_POWER:
-            result = poe_dev_get_total_power(*internal_device_id_ptr, &(attr_list[i].value.u32));
+            result = poeDevGetTotalPower(*internal_device_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_DEVICE_ATTR_POWER_CONSUMPTION:
-            result = poe_dev_get_power_consumption(*internal_device_id_ptr, &(attr_list[i].value.u32));
+            result = poeDevGetPowerConsumption(*internal_device_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_DEVICE_ATTR_VERSION:
-            result = poe_dev_get_version(*internal_device_id_ptr, &(attr_list[i].value.chardata));
+            result = poeDevGetVersion(*internal_device_id_ptr, &(attr_list[i].value.chardata));
             break;
         case SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE:
-            result = poe_dev_get_power_limit_mode(*internal_device_id_ptr, &(attr_list[i].value.s32));
+            result = poeDevGetPowerLimitMode(*internal_device_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
-            break;
+            LOG_ERROR("invalid attribute");
+            return SAI_STATUS_FAILURE;
         }
     }
     
@@ -452,7 +453,7 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
                                                 _Inout_ sai_attribute_t *attr_list)
 {
     uint32_t i = 0, *internal_pse_id_ptr = 0;
-    poe_op_result_t result; 
+    sai_status_t result; 
 
     /* switch case placeholder, may change to function pointers */
     rwlock_excl_acquire(&lock); 
@@ -470,16 +471,20 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
         switch (attr_list[i].id)
         {
         case SAI_POE_PSE_ATTR_PSE_SOFTWARE_VERSION:
-            result = poe_port_set_admin_enable(*internal_pse_id_ptr, &(attr_list[i].value));
+            result = poePseGetSoftwareVersion(*internal_pse_id_ptr, &(attr_list[i].value.chardata));
             break;
-        case SAI_POE_PSE_ATTR_PSE_HARDWARE_VERSION:
+        case SAI_POE_PSE_ATTR_HARDWARE_VERSION:
+            result = poePseGetHardwareVersion(*internal_pse_id_ptr, &(attr_list[i].value.chardata));
             break;
         case SAI_POE_PSE_ATTR_TEMPERATURE:
+            result = poePseGetTemperature(*internal_pse_id_ptr, &(attr_list[i].value.s16));
             break;
-        case SAI_POE_PSE_ATTR_PSE_STATUS:
+        case SAI_POE_PSE_ATTR_STATUS:
+            result = poePseGetStatus(*internal_pse_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
-            break;
+            LOG_ERROR("invalid attribute");
+            return SAI_STATUS_FAILURE;
         }
     }
     
@@ -498,7 +503,7 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
  * @return #SAI_STATUS_SUCCESS if operation is successful otherwise a different
  *    error code is returned.
  */
-static sai_status_t create_poe_port(_Out_ sai_object_id_t      *poe_port_id,
+static sai_status_t create_poe_port(_Out_ sai_object_id_t           *poe_port_id,
                                          _In_ sai_object_id_t        switch_id,
                                          _In_ uint32_t               attr_count,
                                          _In_ const sai_attribute_t *attr_list)
@@ -558,7 +563,7 @@ static sai_status_t remove_poe_port(_In_ sai_object_id_t poe_port_id)
  */
 static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In_ const sai_attribute_t *attr)
 {
-    poe_op_result_t result;
+    sai_status_t result;
     uint32_t *internal_port_id_ptr = NULL;
 
     /* switch case placeholder, may change to function pointers */
@@ -575,18 +580,14 @@ static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In
 
     switch (attr->id)
     {
-    case SAI_POE_PORT_ATTR_STANDARD:
-        break;
     case SAI_POE_PORT_ATTR_ADMIN_ENABLED_STATE:
-        result = poe_port_set_admin_enable(*internal_port_id_ptr, attr->value.booldata);
+        result = poePortSetAdminEnable(*internal_port_id_ptr, attr->value.booldata);
         break;
     case SAI_POE_PORT_ATTR_POWER_LIMIT:
+        result = poeDevSetPowerLimitMode(*internal_port_id_ptr, attr->value.u32);
         break;
     case SAI_POE_PORT_ATTR_POWER_PRIORITY:
-        break;
-    case SAI_POE_PORT_ATTR_CONSUMPTION:
-        break;
-    case SAI_POE_PORT_ATTR_STATUS:
+        result = poePortSetPowerPriority(*internal_port_id_ptr, attr->value.s32);
         break;
     default:
         break;
@@ -610,7 +611,7 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
                                                 _Inout_ sai_attribute_t *attr_list)
 {
     uint32_t i = 0, *internal_port_id_ptr = NULL;
-    poe_op_result_t result; 
+    sai_status_t result; 
 
     /* switch case placeholder, may change to function pointers */
     rwlock_excl_acquire(&lock);
@@ -628,20 +629,23 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
         switch (attr_list[i].id)
         {
         case SAI_POE_PORT_ATTR_STANDARD:
+            result = poePortGetPortStandard(*internal_port_id_ptr, &(attr_list[i].value.s32));
             break;
         case SAI_POE_PORT_ATTR_ADMIN_ENABLED_STATE:
-            result = poe_port_get_admin_enable(*internal_port_id_ptr, &(attr_list[i].value.booldata));
+            result = poePortGetAdminEnable(*internal_port_id_ptr, &(attr_list[i].value.booldata));
             break;
         case SAI_POE_PORT_ATTR_POWER_LIMIT:
-            break;
-        case SAI_POE_PORT_ATTR_POWER_PRIORITY:
+            result = poePortGetPowerLimit(*internal_port_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_PORT_ATTR_CONSUMPTION:
+            result = poePortGetPowerConsumption(*internal_port_id_ptr, &(attr_list[i].value.portpowerconsumption));
             break;
         case SAI_POE_PORT_ATTR_STATUS:
+            result = poePortGetStatus(*internal_port_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
-            break;
+            LOG_ERROR("invalid attribute");
+            return SAI_STATUS_FAILURE;
         }
     }
 
@@ -677,7 +681,7 @@ void main() {
     sai_attribute_t attr_list[10] = {0};
     char exit_choice;
 
-    poe_initialize();
+    poeInitialize();
     
     do {
         printf("Choose which sai_poe_api_t to create:\n");
@@ -714,15 +718,16 @@ void main() {
                 attr_list[0].value.u32 = 1;
                 attr_list[1].value.oid = poe_device_id;
                 attr_count = 2;
-                create_poe_pse(&poe_pse_id, switch_id, attr_count, attr_list);
+                create_poe_pse(&poe_pse_id[pse_create_index], switch_id, attr_count, attr_list);
                 attr_list[0].value.u32 = 1;
                 attr_list[1].value.oid = poe_device_id;
                 attr_count = 2;
-                create_poe_port(&poe_port_id[pse_create_index], switch_id, attr_count, attr_list);
+                create_poe_port(&poe_port_id[port_create_index], switch_id, attr_count, attr_list);
                 pse_create_index++;
                 attr_list[0].value.u32 = 2;
                 attr_list[1].value.oid = poe_device_id;
                 attr_count = 2;
+                port_create_index = 1;
                 create_poe_port(&poe_port_id[port_create_index], switch_id, attr_count, attr_list);
                 pse_create_index++;
             case 1:
