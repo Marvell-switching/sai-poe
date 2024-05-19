@@ -36,7 +36,7 @@ Dictionary *deviceDbPtr = NULL, *pseDbPtr = NULL, *portDbPtr = NULL;
 /* power banks in system */
 POE_V3_MSG_SYS_POWER_BANK_STC powerBankList = {0};
 /* lock critical sections when reading/writing */
-rwlock_excl_t lock;
+rwlock_excl_t poe_v3_lock;
 
 /**
  * @brief Debug callback
@@ -585,9 +585,9 @@ POE_OP_RESULT_ENT poeInitialize(void) {
     
     POE_OP_RESULT_ENT result = POE_OP_OK_E;
     /* init semaphore */
-    rwlock_excl_init(&lock);
+    rwlock_excl_init(&poe_v3_lock);
 
-    rwlock_excl_acquire(&lock);
+    rwlock_excl_acquire(&poe_v3_lock);
 
     /* init board info (from external db) */
     result = boardInfoInitialize();
@@ -633,7 +633,7 @@ POE_OP_RESULT_ENT poeInitialize(void) {
     }
 
 exit:
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
     return result;
 }
 
@@ -791,9 +791,9 @@ POE_OP_RESULT_ENT poePortMatrixInitialize() {
     
     if (index) {
         return poeV3SendReceiveMsg(
-            POE_V3_MSG_LEVEL_SYSTEM, 
-            POE_V3_MSG_DIR_SET,
-            POE_V3_SYS_MSG_PORT_MATRIX,
+            POE_V3_MSG_LEVEL_SYSTEM_CNS, 
+            POE_V3_MSG_DIR_SET_CNS,
+            POE_V3_SYS_MSG_PORT_MATRIX_CNS,
             sizeof(setMatrixParams),
             (uint8_t*)&setMatrixParams);
     } 
@@ -827,7 +827,7 @@ POE_OP_RESULT_ENT poeV3SendReceiveMsg (
 )
 {
     uint8_t  *buf_ptr;
-    bool send=(direction==POE_V3_MSG_DIR_GET)?false:true;
+    bool send=(direction==POE_V3_MSG_DIR_GET_CNS)?false:true;
     POE_V3_MSG_OP_CODE_STC op_code;
 
     poeV3SetMsgOpCodeMac(op_code, msgLevel, direction, msgId);
@@ -874,9 +874,9 @@ POE_OP_RESULT_ENT poePortStandardInitialize() {
     }
 
     return poeV3SendReceiveMsg(
-            POE_V3_MSG_LEVEL_SYSTEM, 
-            POE_V3_MSG_DIR_SET,
-            POE_V3_SYS_MSG_PORT_SUPPORT_STANDARD,
+            POE_V3_MSG_LEVEL_SYSTEM_CNS, 
+            POE_V3_MSG_DIR_SET_CNS,
+            POE_V3_SYS_MSG_PORT_SUPPORT_STANDARD_CNS,
             sizeof(portStandardParams),
             (uint8_t*)&portStandardParams);
 }
@@ -891,14 +891,14 @@ POE_OP_RESULT_ENT poePowerBankInitialize() {
     uint32_t index = 0;
     POE_V3_MSG_SYS_POWER_BANK_STC powerBankParams;
 
-    for (index = 0; index < POE_MAX_NUM_OF_POWER_BANKS ; index++) {
+    for (index = 0; index < POE_MAX_NUM_OF_POWER_BANKS_CNS ; index++) {
         powerBankParams.powerBankWSwap[index] = swap16(powerBankList.powerBankWSwap[index]); 
     }
     
     return poeV3SendReceiveMsg(
-            POE_V3_MSG_LEVEL_SYSTEM, 
-            POE_V3_MSG_DIR_SET,
-            POE_V3_SYS_MSG_POWER_BANK_CONFIG,
+            POE_V3_MSG_LEVEL_SYSTEM_CNS, 
+            POE_V3_MSG_DIR_SET_CNS,
+            POE_V3_SYS_MSG_POWER_BANK_CONFIG_CNS,
             sizeof(powerBankParams),
             (uint8_t*)&powerBankParams);
 }
@@ -926,11 +926,11 @@ POE_OP_RESULT_ENT poeDevGetTotalPower (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
     
     *totalPowerMwPtr = powerBankList.powerBankWSwap[0];
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
     
     return result;
 }
@@ -958,10 +958,10 @@ POE_OP_RESULT_ENT poeDevGetPowerConsumption (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
     
     memset(&powerConsumptionParams, 0, sizeof(powerConsumptionParams));
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_POWER_CONSUMPTION, sizeof(powerConsumptionParams), (UINT_8*)&powerConsumptionParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_POWER_CONSUMPTION_CNS, sizeof(powerConsumptionParams), (UINT_8*)&powerConsumptionParams);
 
     if(result == POE_OP_OK_E) {
         *powerConsumptionMwPtr = (swap32(powerConsumptionParams.powerConsumptionSwap)) + 0.5;
@@ -970,7 +970,7 @@ POE_OP_RESULT_ENT poeDevGetPowerConsumption (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
     
     return result;
 }
@@ -998,11 +998,11 @@ POE_OP_RESULT_ENT poeDevGetVersion (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(versionParamsPtr, 0, sizeof(POE_V3_MSG_SYS_SYSTEM_VERSION_STC));
     memset(versionParamsPtr->pseVersionData, 0xFF, sizeof(versionParamsPtr->pseVersionData));
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_SYSTEM_VERSION, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_SYSTEM_VERSION_CNS, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
 
     if(result == POE_OP_OK_E) {
         snprintf (versionPtr, 20, "%d.%d.%d.%d", 
@@ -1015,7 +1015,7 @@ POE_OP_RESULT_ENT poeDevGetVersion (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1043,11 +1043,11 @@ POE_OP_RESULT_ENT poeDevGetPowerLimitMode (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&limitModeParams, 0, sizeof(POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC));
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_POWER_LIMIT_MODE, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_POWER_LIMIT_MODE_CNS, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
 
     if(result == POE_OP_OK_E) {
         *powerLimitPtr = (uint32_t)limitModeParams.limitMode;
@@ -1056,7 +1056,7 @@ POE_OP_RESULT_ENT poeDevGetPowerLimitMode (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
     
     return result;
 }
@@ -1084,18 +1084,18 @@ POE_OP_RESULT_ENT poeDevSetPowerLimitMode (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&limitModeParams, 0, sizeof(POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC));
     limitModeParams.limitMode = (POWER_LIMIT_MODE)powerLimitPtr;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_SET, POE_V3_SYS_MSG_POWER_LIMIT_MODE, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_SET_CNS, POE_V3_SYS_MSG_POWER_LIMIT_MODE_CNS, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
 
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
     
     return result;
 }
@@ -1123,11 +1123,11 @@ POE_OP_RESULT_ENT poePseGetSoftwareVersion (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(versionParamsPtr, 0, sizeof(POE_V3_MSG_SYS_SYSTEM_VERSION_STC));
     memset(versionParamsPtr->pseVersionData, 0xFF, sizeof(versionParamsPtr->pseVersionData));
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_SYSTEM_VERSION, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_SYSTEM_VERSION_CNS, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
 
     if(result == POE_OP_OK_E) {
         snprintf (versionPtr, 20, "%d.%d.%d.%d",
@@ -1140,7 +1140,7 @@ POE_OP_RESULT_ENT poePseGetSoftwareVersion (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1169,15 +1169,15 @@ POE_OP_RESULT_ENT poePseGetHardwareVersion (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(versionParamsPtr, 0, sizeof(POE_V3_MSG_SYS_SYSTEM_VERSION_STC));
     memset(versionParamsPtr->pseVersionData, 0xFF, sizeof(versionParamsPtr->pseVersionData));
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_SYSTEM_VERSION, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_SYSTEM_VERSION_CNS, sizeof(*versionParamsPtr), (uint8_t*)versionParamsPtr);
 
     if(result == POE_OP_OK_E) {
         switch(versionParamsPtr->pseVersionData[poePseNum].pseHwVersion) {
-            case POE_V3_DEV_HW_VERSION_LTC4291:
+            case POE_V3_DEV_HW_VERSION_LTC4291_CNS:
                 strcat(prefix, "LTC4291"); /* bt */
                 break;     
             default:
@@ -1191,7 +1191,7 @@ POE_OP_RESULT_ENT poePseGetHardwareVersion (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1219,11 +1219,11 @@ POE_OP_RESULT_ENT poePseGetTemperature (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memcpy(temperatureParams.pseTempSwap, 0, sizeof(temperatureParams.pseTempSwap));
 
-    poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_PSE_TEMPERATURE, sizeof(temperatureParams), (uint8_t*)&temperatureParams);
+    poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_PSE_TEMPERATURE_CNS, sizeof(temperatureParams), (uint8_t*)&temperatureParams);
 
     if(result == POE_OP_OK_E) {
         *temperaturePtr = swap16(temperatureParams.pseTempSwap[poePseNum]);
@@ -1232,7 +1232,7 @@ POE_OP_RESULT_ENT poePseGetTemperature (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1267,14 +1267,14 @@ POE_OP_RESULT_ENT poePseGetStatus (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&systemStatusParams, 0, sizeof(systemStatusParams));
-    poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM, POE_V3_MSG_DIR_GET, POE_V3_SYS_MSG_PSE_STATUS, sizeof(systemStatusParams), (uint8_t*)&systemStatusParams);
+    poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_PSE_STATUS_CNS, sizeof(systemStatusParams), (uint8_t*)&systemStatusParams);
 
     if(result == POE_OP_OK_E) {
-        if (systemStatusParams.pseStatus[poePseNum] == POE_V3_PSE_STATUS_NOT_PRESENT || 
-            systemStatusParams.pseStatus[poePseNum] > POE_V3_PSE_STATUS_I2C_FAILURE)
+        if (systemStatusParams.pseStatus[poePseNum] == POE_V3_PSE_STATUS_NOT_PRESENT_CNS || 
+            systemStatusParams.pseStatus[poePseNum] > POE_V3_PSE_STATUS_I2C_FAILURE_CNS)
             *statusPtr = SAI_POE_PSE_STATUS_TYPE_NOT_PRESENT;
         else {
             *statusPtr = convertStatusToSai[systemStatusParams.pseStatus[poePseNum]];
@@ -1284,7 +1284,7 @@ POE_OP_RESULT_ENT poePseGetStatus (
         LOG_ERROR("failed to get data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1310,7 +1310,7 @@ POE_OP_RESULT_ENT poePortGetPortStandard (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock);  
+    rwlock_excl_acquire(&poe_v3_lock);  
 
     *portStandardPtr = poeGetPortPoeHwType(frontPanelIndex);
 
@@ -1319,7 +1319,7 @@ POE_OP_RESULT_ENT poePortGetPortStandard (
         result = POE_OP_FAILED_E;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1341,19 +1341,19 @@ POE_OP_RESULT_ENT poePortSetAdminEnable (
     POE_V3_MSG_PORT_ENABLE_STC portParams;
     POE_OP_RESULT_ENT result; 
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&portParams, 0, sizeof(POE_V3_MSG_PORT_ENABLE_STC));
     portParams.logicPortNum = (uint8_t)frontPanelIndex;
     portParams.portAdminEnableDisable = (enable==true)?POE_V3_PORT_ADMIN_ENABLE_CNS:POE_V3_PORT_ADMIN_DISABLE_CNS;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_SET, POE_V3_PORT_MSG_PORT_ENABLE_CNS, sizeof(portParams), (uint8_t*)&portParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_SET_CNS, POE_V3_PORT_MSG_PORT_ENABLE_CNS, sizeof(portParams), (uint8_t*)&portParams);
 
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 } 
@@ -1380,18 +1380,18 @@ POE_OP_RESULT_ENT poePortGetAdminEnable (
         return POE_OP_FAILED_E;
     }
 
-    rwlock_excl_acquire(&lock);  
+    rwlock_excl_acquire(&poe_v3_lock);  
 
     memset(&portParams, 0, sizeof(POE_V3_MSG_PORT_ENABLE_STC));
     portParams.logicPortNum = (uint8_t)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_PORT_MSG_PORT_ENABLE_CNS, sizeof(portParams), (uint8_t*)&portParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_PORT_MSG_PORT_ENABLE_CNS, sizeof(portParams), (uint8_t*)&portParams);
 
     if(result == POE_OP_OK_E) {
         *enablePtr = portParams.portAdminEnableDisable;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1413,18 +1413,18 @@ POE_OP_RESULT_ENT poePortSetPowerLimit (
     POE_V3_MSG_PORT_POWER_LIMIT_STC powerLimitParams;
     POE_OP_RESULT_ENT result; 
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     powerLimitParams.logicPortNum = (UINT_8)frontPanelIndex;
     powerLimitParams.powerLimitMwSwap = swap32(powerLimit);
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_SET, POE_V3_PORT_MSG_PORT_POWER_LIMIT_CNS, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_SET_CNS, POE_V3_PORT_MSG_PORT_POWER_LIMIT_CNS, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
 
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1446,18 +1446,18 @@ POE_OP_RESULT_ENT poePortGetPowerLimit (
     POE_V3_MSG_PORT_POWER_LIMIT_STC powerLimitParams;
     POE_OP_RESULT_ENT result; 
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&powerLimitParams, 0, sizeof(powerLimitParams));
     powerLimitParams.logicPortNum = (UINT_8)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_PORT_MSG_PORT_POWER_LIMIT_CNS, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_PORT_MSG_PORT_POWER_LIMIT_CNS, sizeof(powerLimitParams), (uint8_t*)&powerLimitParams);
 
     if(result == POE_OP_OK_E) {
         *powerLimitPtr = swap32(powerLimitParams.powerLimitMwSwap);
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1479,18 +1479,18 @@ POE_OP_RESULT_ENT poePortSetPowerPriority (
     POE_V3_MSG_PORT_PRIORITY_STC portPriorityParams;
     POE_OP_RESULT_ENT result; 
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     portPriorityParams.logicPortNum = (UINT_8)frontPanelIndex;
     portPriorityParams.portPriority = powerPriority;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_SET, POE_V3_PORT_MSG_PORT_PRIORITY_CNS, sizeof(portPriorityParams), (uint8_t*)&portPriorityParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_SET_CNS, POE_V3_PORT_MSG_PORT_PRIORITY_CNS, sizeof(portPriorityParams), (uint8_t*)&portPriorityParams);
 
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1534,12 +1534,12 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
         SAI_POE_PORT_SIGNATURE_TYPE_DUAL
     };
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&powerConsumptionInfo, 0, sizeof(powerConsumptionInfo));
     powerConsumptionInfo.logicPortNum = (UINT_8)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_PORT_MSG_POWER_CONSUM_INFO_CNS, sizeof(powerConsumptionInfo), (uint8_t*)&powerConsumptionInfo);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_PORT_MSG_POWER_CONSUM_INFO_CNS, sizeof(powerConsumptionInfo), (uint8_t*)&powerConsumptionInfo);
 
     if(result == POE_OP_OK_E) {
         powerConsumptionPtr->active_channel = convertStatusToSai[powerConsumptionInfo.activeChannel];
@@ -1554,7 +1554,7 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
         powerConsumptionPtr->assigned_class_b = (uint8_t)powerConsumptionInfo.assignedClassBSwap;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }
@@ -1564,17 +1564,17 @@ sai_poe_port_status_t portHwStatusToDetectionStatus(portStatus)
     sai_poe_port_status_t detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;
 
     switch (portStatus) {                                                             
-        case POE_V3_PORT_STATUS_OFF_IN_DETECTION:                  
-        case POE_V3_PORT_STATUS_OFF_CAP_DET_INV_SIG:               
+        case POE_V3_PORT_STATUS_OFF_IN_DETECTION_CNS:                  
+        case POE_V3_PORT_STATUS_OFF_CAP_DET_INV_SIG_CNS:               
             detectionStatus = SAI_POE_PORT_STATUS_TYPE_SEARCHING;       
             break;                                                                      
-        case POE_V3_PORT_STATUS_ON_RES_DETECT:                         
-        case POE_V3_PORT_STATUS_ON_CAP_DETECT:                         
-        case POE_V3_PORT_STATUS_ON_FORCE_4_PAIR:
-        case POE_V3_PORT_STATUS_ON_NON_STD_BTDEVICE:                        
+        case POE_V3_PORT_STATUS_ON_RES_DETECT_CNS:                         
+        case POE_V3_PORT_STATUS_ON_CAP_DETECT_CNS:                         
+        case POE_V3_PORT_STATUS_ON_FORCE_4_PAIR_CNS:
+        case POE_V3_PORT_STATUS_ON_NON_STD_BTDEVICE_CNS:                        
             detectionStatus = SAI_POE_PORT_STATUS_TYPE_DELIVERING_POWER; 
             break;                                                                      
-        case POE_V3_PORT_STATUS_OFF_USER_DISABLE:                      
+        case POE_V3_PORT_STATUS_OFF_USER_DISABLE_CNS:                      
             detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;        
             break;                                                                                                                                                                                                     
         default:                                                                        
@@ -1607,12 +1607,12 @@ POE_OP_RESULT_ENT poePortGetStatus (
     sai_poe_port_status_t    detectionStatusB;
     POE_PORT_HW_TYPE_ENT hwType;
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&portStatusParams, 0, sizeof(portStatusParams));
     portStatusParams.logicPortNum = (UINT_8)frontPanelIndex;
 
-    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT, POE_V3_MSG_DIR_GET, POE_V3_CAUSE_PORT_STATUS_CNS, sizeof(portStatusParams), (uint8_t*)&portStatusParams);
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_CAUSE_PORT_STATUS_CNS, sizeof(portStatusParams), (uint8_t*)&portStatusParams);
 
     /* Convert specific HW status, to generic output: off/delivering power/searching/fault */
     if(result == POE_OP_OK_E) {
@@ -1635,7 +1635,7 @@ POE_OP_RESULT_ENT poePortGetStatus (
         }
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&poe_v3_lock);
 
     return result;
 }

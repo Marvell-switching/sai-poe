@@ -555,6 +555,39 @@ bool extDrvIpc15ByteMsgWrite(
 bool extDrvIpc15BytesMsgRead(
     void *msg_PTR
 );
+
+typedef unsigned int GT_STATUS;
+typedef uint8_t     GT_U8;
+typedef uint32_t    GT_PHYSICAL_PORT_NUM;
+#define IN
+
+/**
+* @internal internal_cpssPortManagerStatClear
+* @endinternal
+*
+* @brief  clear portManager statistic db
+*
+* @param[in]  devNum               - device number
+* @param[in]  portNum              - port number
+*
+* @retval GT_OK                    - on success
+* @retval GT_BAD_PARAM             - on wrong port number or device
+*
+*
+*/
+extern GT_STATUS internal_cpssPortManagerStatClear
+(
+    IN GT_U8                    devNum,
+    IN GT_PHYSICAL_PORT_NUM     portNum
+);
+
+GT_STATUS cpssDxChPortManagerStatusGet
+(
+    IN  GT_U8                           devNum,
+    IN  GT_PHYSICAL_PORT_NUM            portNum,
+    IN void    *portStagePtr
+);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

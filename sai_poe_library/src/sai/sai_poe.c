@@ -29,7 +29,7 @@
 /* global sai db pointer */
 global_poe *g_sai_db_ptr = NULL;
 /* lock critical sections when reading/writing */
-rwlock_excl_t lock;
+rwlock_excl_t sai_poe_lock;
 /* dictionaries holding poe devie/pse/port mappings (sai <-> v3 poe) */
 Dictionary *poe_object_device_mapping_ptr = NULL, *poe_object_pse_mapping_ptr = NULL, *poe_object_port_mapping_ptr = NULL;
 
@@ -231,8 +231,8 @@ static sai_status_t create_poe_device(
     }
 
     /* init sempahore */
-    rwlock_excl_init(&lock);
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_init(&sai_poe_lock);
+    rwlock_excl_acquire(&sai_poe_lock); 
     status = poe_device_initialize();
     
     if (status != SAI_STATUS_SUCCESS) {
@@ -245,7 +245,7 @@ static sai_status_t create_poe_device(
     }
 
 exit:
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
     return status;
 }
 
@@ -261,11 +261,11 @@ static sai_status_t remove_poe_device(_In_ sai_object_id_t poe_device_id)
 {
     assert(NULL != g_sai_db_ptr);
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&sai_poe_lock); 
 
     remove_object(SAI_OBJECT_TYPE_POE_DEVICE, poe_device_id);
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     return SAI_STATUS_SUCCESS;
 }
@@ -286,16 +286,16 @@ sai_status_t set_poe_device_attribute(
     sai_status_t result; 
     uint32_t *internal_device_id_ptr = NULL;
 
-    rwlock_excl_acquire(&lock);
+    rwlock_excl_acquire(&sai_poe_lock);
     internal_device_id_ptr = (uint32_t*)dict_get(poe_object_device_mapping_ptr, poe_device_id);
     
     if(internal_device_id_ptr == NULL) {
-        rwlock_excl_release(&lock);
+        rwlock_excl_release(&sai_poe_lock);
         LOG_ERROR("failed to get valid entry");
         return SAI_STATUS_FAILURE;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     /* switch case placeholder, may change to function pointers */
     switch (attr->id)
@@ -330,16 +330,16 @@ static sai_status_t get_poe_device_attribute(
     uint32_t i = 0, *internal_device_id_ptr = NULL;
 
     /* switch case placeholder, may change to function pointers */
-    rwlock_excl_acquire(&lock);
+    rwlock_excl_acquire(&sai_poe_lock);
     internal_device_id_ptr = (uint32_t*)dict_get(poe_object_device_mapping_ptr, poe_device_id);
 
     if(internal_device_id_ptr == NULL) {
-        rwlock_excl_release(&lock);
+        rwlock_excl_release(&sai_poe_lock);
         LOG_ERROR("failed to get valid entry");
         return SAI_STATUS_FAILURE;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     for(i=0; i<attr_count; i++) {
         switch (attr_list[i].id)
@@ -399,11 +399,11 @@ static sai_status_t create_poe_pse(_Out_ sai_object_id_t      *poe_pse_id,
     status = find_attrib_in_list(attr_count, attr_list, SAI_POE_PSE_ATTR_DEVICE_ID, &poe_device, &poe_device_index);
     assert(status == SAI_STATUS_SUCCESS);
 
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&sai_poe_lock); 
 
     status = create_object(SAI_OBJECT_TYPE_POE_PSE, poe_pse_id, attr_count, attr_list);
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
     return status;
 }
 
@@ -417,11 +417,11 @@ static sai_status_t create_poe_pse(_Out_ sai_object_id_t      *poe_pse_id,
 static sai_status_t remove_poe_pse(_In_ sai_object_id_t poe_pse_id)
 {
     assert(NULL != g_sai_db_ptr);
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&sai_poe_lock); 
 
     remove_object(SAI_OBJECT_TYPE_POE_PSE, poe_pse_id);
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     return SAI_STATUS_SUCCESS;
 }
@@ -456,16 +456,16 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
     sai_status_t result; 
 
     /* switch case placeholder, may change to function pointers */
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&sai_poe_lock); 
     internal_pse_id_ptr = (uint32_t*)dict_get(poe_object_pse_mapping_ptr, poe_pse_id);
 
     if(internal_pse_id_ptr == NULL) {
-        rwlock_excl_release(&lock);
+        rwlock_excl_release(&sai_poe_lock);
         LOG_ERROR("failed to get valid entry");
         return SAI_STATUS_FAILURE;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
     
     for(i=0; i<attr_count; i++) {
         switch (attr_list[i].id)
@@ -525,11 +525,11 @@ static sai_status_t create_poe_port(_Out_ sai_object_id_t           *poe_port_id
     status = find_attrib_in_list(attr_count, attr_list, SAI_POE_PORT_ATTR_DEVICE_ID, &poe_device, &poe_device_index);
     assert(status == SAI_STATUS_SUCCESS);
 
-    rwlock_excl_acquire(&lock);
+    rwlock_excl_acquire(&sai_poe_lock);
 
     status = create_object(SAI_OBJECT_TYPE_POE_PORT, poe_port_id, attr_count, attr_list);
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
     return status;
 }
 
@@ -544,11 +544,11 @@ static sai_status_t remove_poe_port(_In_ sai_object_id_t poe_port_id)
 {
     assert(NULL != g_sai_db_ptr);
     
-    rwlock_excl_acquire(&lock); 
+    rwlock_excl_acquire(&sai_poe_lock); 
 
     remove_object(SAI_OBJECT_TYPE_POE_PSE, poe_port_id);
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     return SAI_STATUS_SUCCESS;
 }
@@ -567,16 +567,16 @@ static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In
     uint32_t *internal_port_id_ptr = NULL;
 
     /* switch case placeholder, may change to function pointers */
-    rwlock_excl_acquire(&lock);
+    rwlock_excl_acquire(&sai_poe_lock);
     internal_port_id_ptr = (uint32_t*)dict_get(poe_object_port_mapping_ptr, poe_port_id);
 
     if(internal_port_id_ptr == NULL) {
-        rwlock_excl_release(&lock);
+        rwlock_excl_release(&sai_poe_lock);
         LOG_ERROR("failed to get valid entry");
         return SAI_STATUS_FAILURE;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     switch (attr->id)
     {
@@ -614,16 +614,16 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
     sai_status_t result; 
 
     /* switch case placeholder, may change to function pointers */
-    rwlock_excl_acquire(&lock);
+    rwlock_excl_acquire(&sai_poe_lock);
     internal_port_id_ptr = (uint32_t*)dict_get(poe_object_port_mapping_ptr, poe_port_id);
 
     if(internal_port_id_ptr == NULL) {
-        rwlock_excl_release(&lock);
+        rwlock_excl_release(&sai_poe_lock);
         LOG_ERROR("failed to get valid entry");
         return SAI_STATUS_FAILURE;
     }
 
-    rwlock_excl_release(&lock);
+    rwlock_excl_release(&sai_poe_lock);
 
     for(i=0; i<attr_count; i++) {
         switch (attr_list[i].id)
@@ -674,7 +674,7 @@ const sai_poe_api_t poe_api = {
  * @return SAI_STATUS_SUCCESS if operation is successful otherwise a different
  *  error code is returned.
  */
-void main() {
+int main_menu(void) {
     int choice;
     sai_object_id_t switch_id = 0, poe_device_id = 0, poe_pse_id[16] = {0}, poe_port_id[48] = {0};
     uint32_t attr_count = 0, value = 0, pse_create_index = 0, port_create_index = 0, port_index, pse_index;

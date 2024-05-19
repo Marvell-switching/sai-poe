@@ -35,7 +35,7 @@ extern uint32_t exthwgPoeIpcReinit (
     uint32_t ret = 0;
 #ifndef _ROS_WM
     if (mcuType == ExthwgPoeIpcMcuTypeCm3)
-        // return extDrvIpcCm3CreateChannel();
+        return extDrvIpcCm3CreateChannel();
 #endif
     return ret;
 }
@@ -240,22 +240,22 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcRunFirmware(
     char *fwFileName
 )
 {
-	EXTHWG_POE_ret_TYP ret = EXTHWG_POE_ret_ok_CNS;
-    char *buf = NULL /*, fw_file_name[100]={0} */;
-    uint32_t fileSize;
-#ifndef _ROS_WM
-    int         i;
-#endif
-    /* In order to reset DTCM area, which is 0xB00 *words* long - we use a /16
-	   buffer - in order not to alloc to much on the thread's stack
-	*/
-	#define NOF_DTCM_CHUNKS	16
-	#define DTCM_CHUNK 	(0xB00*4/NOF_DTCM_CHUNKS)
-	uint32_t dtcmBuf[DTCM_CHUNK] = {0xff};
-    struct stat st;
-    FILE *file;
+ 	EXTHWG_POE_ret_TYP ret = EXTHWG_POE_ret_ok_CNS;
+//     char *buf = NULL /*, fw_file_name[100]={0} */;
+//     uint32_t fileSize;
+// #ifndef _ROS_WM
+//     int         i;
+// #endif
+//     /* In order to reset DTCM area, which is 0xB00 *words* long - we use a /16
+// 	   buffer - in order not to alloc to much on the thread's stack
+// 	*/
+// 	#define NOF_DTCM_CHUNKS	16
+// 	#define DTCM_CHUNK 	(0xB00*4/NOF_DTCM_CHUNKS)
+// 	uint32_t dtcmBuf[DTCM_CHUNK] = {0xff};
+//     // struct stat st;
+//     FILE *file;
 
-	if (!exthwpPoeIpcFwLoaded){
+// 	if (!exthwpPoeIpcFwLoaded){
 		/*remove protection
 	    if (GT_OK != extDrvDragoniteProtect(GT_FALSE))
 	        ret = EXTHWG_POE_ret_failed_CNS;*/
@@ -271,75 +271,58 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcRunFirmware(
 		// /* make the path NULL-terminated */
 		// fw_file_name[sizeof(fw_file_name)-1] = '\0';
         
-        if (stat(fwFileName, &st) == 0){
-            fileSize = st.st_size;
+//         if (stat(fwFileName, &st) == 0){
+//             fileSize = st.st_size;
 
-            file = fopen(fwFileName, "r");
-            if (file == NULL) {
-                perror("Error opening file");
-                return EXTHWG_POE_ret_failed_CNS;
-            }
+//             file = fopen(fwFileName, "r");
+//             if (file == NULL) {
+//                 perror("Error opening file");
+//                 return EXTHWG_POE_ret_failed_CNS;
+//             }
 
-            buf = (char *)malloc(fileSize);
-            if (buf == NULL)
-            	return EXTHWG_POE_ret_failed_CNS;
+//             buf = (char *)malloc(fileSize);
+//             if (buf == NULL)
+//             	return EXTHWG_POE_ret_failed_CNS;
 
-            ssize_t bytesRead = read(file, buf, fileSize);
-            if (bytesRead == -1) {
-                perror("Error reading file");
-                free(buf); // Free allocated memory
-                close(file);
-                return EXTHWG_POE_ret_failed_CNS;
-            }
+//             ssize_t bytesRead = read(file, buf, fileSize);
+//             if (bytesRead == -1) {
+//                 perror("Error reading file");
+//                 free(buf); // Free allocated memory
+//                 close(file);
+//                 return EXTHWG_POE_ret_failed_CNS;
+//             }
 
-            // HOSTG_rscode_file_load(fw_file_name, buf);
+// #ifndef _ROS_WM
+//             /* call to FW download API */
+//             if (exthwgPoeIpcDownloadFirmware(buf, fileSize, mcuType) != EXTHWG_POE_ret_ok_CNS)
+//                 // OSSYSG_fatal_error("PoE firmware download failed");
 
-            // DEBUGG_log_MAC(EXTHWG_POE_debug_fw_flag)(DEBUGG_func_name_MAC(),
-            //     "download [%s], file_size = %d", fw_file_name, file_size);
-
-#ifndef _ROS_WM
-            /* call to FW download API */
-            if (exthwgPoeIpcDownloadFirmware(buf, fileSize, mcuType) != EXTHWG_POE_ret_ok_CNS)
-                // OSSYSG_fatal_error("PoE firmware download failed");
-
-            if (mcuType == ExthwgPoeIpcMcuTypeDragonite){
+//             if (mcuType == ExthwgPoeIpcMcuTypeDragonite){
                 
-                /* Init DTCM with 0xFF */
-                // for (i=0; i<NOF_DTCM_CHUNKS; i++)
-                    // if (extDrvDragoniteMemWrite(DTCM_DIR, i*DTCM_CHUNK, (GT_8_PTR)DTCM_BUF, sizeof(DTCM_BUF)) != GT_OK)
-                    //     goto fail_write_free;
-                /*
-                if (GT_OK != extDrvDragoniteProtect(GT_TRUE))
-                    ret = EXTHWG_POE_ret_failed_CNS;*/
-
-                // if (extDrvDragoniteUnresetSet(GT_TRUE) != GT_OK)
-		        //     ret = EXTHWG_POE_ret_failed_CNS;
+//                 /* not supported */
             
-            }
-            else if (mcuType == ExthwgPoeIpcMcuTypeCm3){
+//             }
+//             else if (mcuType == ExthwgPoeIpcMcuTypeCm3){
                 
-                // if (extDrvIpcCm3UnresetSet(true, 2) != 0) /* core 2*/
-                //     ret = EXTHWG_POE_ret_failed_CNS;
-            }
-            else {
-                // OSSYSG_fatal_error("Invalid mcu type");
-            }
-#endif
-        }
-        else {
-            // DEBUGG_log_MAC(EXTHWG_POE_debug_fw_flag)(DEBUGG_func_name_MAC(),
-            //     "Failed to get size of file [%s]", fw_file_name);
+//                 // if (extDrvIpcCm3UnresetSet(true, 2) != 0) /* core 2*/
+//                 //     ret = EXTHWG_POE_ret_failed_CNS;
+//             }
+//             else {
+//                 // OSSYSG_fatal_error("Invalid mcu type");
+//             }
+// #endif
+//         }
+//         else {
+//             return EXTHWG_POE_ret_failed_CNS;
+//         }
+// 	}
+// #ifndef _ROS_WM
 
-            return EXTHWG_POE_ret_failed_CNS;
-        }
-	}
-#ifndef _ROS_WM
-
-/* fall through in case ok */
-failWriteFree:
-#endif
-	if (buf)
-		free(buf);
+// /* fall through in case ok */
+// failWriteFree:
+// #endif
+// 	if (buf)
+// 		free(buf);
 
 	return ret;
 }
@@ -351,10 +334,7 @@ failWriteFree:
  * 
  * @param[in] None
  */
-extern void exthwgPoeIpcRemoveFwFlagLoaded(
-    void
-)
+void exthwgPoeIpcRemoveFwFlagLoaded()
 {
-
     exthwpPoeIpcFwLoaded = false;
 }
