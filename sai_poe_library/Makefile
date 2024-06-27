@@ -1,12 +1,12 @@
 # Specify the compiler
 CC := /swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-gcc
-LD := /swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-gcc
+#CC := gcc
 
 # Compiler flags
-CFLAGS := -g -I. -I./PDLIB -I./h -I./PDLIB/h/ -fPIE
+CFLAGS = -g -O0 -I. -I./PDLIB -I./h -I./PDLIB/h/ -fPIC
 
 # Directory for object files
-OBJ_DIR := obj
+OBJ_DIR := build
 
 # List of source files
 SRCS := $(shell find . -type f -name '*.c')
@@ -15,22 +15,62 @@ SRCS := $(shell find . -type f -name '*.c')
 OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 # Linker flags
-LDFLAGS := -lpthread -Xlinker --whole-archive /local/store/sai-poe/sai_poe_library/COMMON.a /local/store/sai-poe/sai_poe_library/MAINPPDRV.a /local/store/sai-poe/sai_poe_library/MAINEXTUTILS.a /local/store/sai-poe/sai_poe_library/MAINLUAWRAPPER.a /local/store/sai-poe/sai_poe_library/REFERENCECODE.a /local/store/sai-poe/sai_poe_library/CPSSENABLER.a -Xlinker --no-whole-archive -ldl -lc -lm -lrt -lssp
 
-# Target for the executable
-TARGET := my_program
+# PATHS = /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/common/libs/COMMON.a \
+    # /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/mainPpDrv/libs/MAINPPDRV.a \
+	# /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/mainExtUtils/libs/MAINEXTUTILS.a \
+    # /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/cpssEnabler/libs/CPSSENABLER.a \
+	# /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/referenceCode/libs/REFERENCECODE.a \
+	# /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/mainLuaWrapper/libs/MAINLUAWRAPPER.a \
+
+# PATHS = \
+	# /local/store/sai_cpss/dist/armv8/libXdkCpss.a \
+	# /local/store/sai_cpss/dist/armv8/libCpssEnablerNoMain.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/common/libs//COMMON.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/mainPpDrv/libs//MAINPPDRV.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/mainExtUtils/libs//MAINEXTUTILS.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/embeddedCommands/libs//EMBEDDEDCOMMANDS.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/simulation/libs/SIMULATION.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/mainTmDrv/libs//MAINTMDRV.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/mainGaltisWrapper/libs//MAINGALTISWRAPPER.a \
+	# /local/store/sai_cpss/cpss/compilation_root/HEAD/sim64_DX/mainLuaWrapper/libs//MAINLUAWRAPPER.a \
+
+PATHS = \
+	/local/store/sai_cpss/dist/native/libXdkXps.so \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/libcpss.so \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/libhelper.so \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/cpssEnabler/libs/GTOS.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/cpssEnabler/libs/GTSTACK.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/common/libs/COMMON.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/mainPpDrv/libs/MAINPPDRV.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/cpssEnabler/libs/MAINEXTDRV.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/cpssEnabler/libs/MAINEXTDRVSHARED.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/cpssEnabler/libs/GTUTIL.a \
+	/local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX_SHARED/cpssEnabler/libs/SHRMEMINTRACPSSDATA.a \
+	
+	
+LDFLAGS := -shared -lpthread $(PATHS)
+#LDFLAGS := -shared -lpthread  /local/store/cpss_4.3/compilation_root/cpss_4.3/armv8_DX/common/libs/COMMON.a 
+#LDFLAGS := -shared -lpthread /local/store/sai-poe/sai-poe/usr/lib/libXdkCpss.a /local/store/sai-poe/sai-poe/usr/lib/CPSSENABLER.a /local/store/sai-poe/sai-poe/usr/lib/MAINPPDRV.a /local/store/sai-poe/sai-poe/usr/lib/COMMON.a
+#LDFLAGS := -shared -lpthread /local/store/sai-poe/sai-poe/usr/lib/libcpss.so /local/store/sai-poe/sai-poe/usr/lib/libhelper.so
+#LDFLAGS := -shared -lpthread /local/store/sai-poe/sai-poe/usr/lib/CPSSENABLER.a /local/store/sai-poe/sai-poe/usr/lib/MAINPPDRV.a
+
+# Entry point function
+ENTRY_POINT := main
+
+# Target for the shared library
+TARGET := libsai.so
 
 # Default target
 all: $(TARGET)
 
-# Rule to build the executable
+# Rule to build the shared library
 $(TARGET): $(OBJS)
-	$(LD) $^ $(LDFLAGS) --entry main_menu -o $@
+	$(CC) $^ $(LDFLAGS) -Wl,-e$(ENTRY_POINT) -o $@
 
 # Rule to compile each source file into an object file
 $(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	@mkdir -p $(dir $@)
-	echo "$(CC) $(CFLAGS) -c $< -o $@"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Create the object directory if it doesn't exist

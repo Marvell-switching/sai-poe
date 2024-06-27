@@ -23,6 +23,14 @@
 #include "assert.h"
 #include <h/utils/log.h>
 
+#define SAI_MAJOR 1
+#define SAI_MINOR 14
+#define SAI_REVISION 0
+
+#define SAI_VERSION(major, minor, revision) (10000 * (major) + 100 * (minor) + (revision))
+
+#define SAI_API_VERSION SAI_VERSION(SAI_MAJOR, SAI_MINOR, SAI_REVISION)
+
 #undef  __MODULE__
 #define __MODULE__ SAI_POE
 
@@ -668,175 +676,457 @@ const sai_poe_api_t poe_api = {
     get_poe_port_attribute,
 };
 
-/**
- * @brief main.
- *
- * @return SAI_STATUS_SUCCESS if operation is successful otherwise a different
- *  error code is returned.
- */
-int main_menu(void) {
-    int choice;
-    sai_object_id_t switch_id = 0, poe_device_id = 0, poe_pse_id[16] = {0}, poe_port_id[48] = {0};
-    uint32_t attr_count = 0, value = 0, pse_create_index = 0, port_create_index = 0, port_index, pse_index;
-    sai_attribute_t attr_list[10] = {0};
-    char exit_choice;
+sai_status_t sai_api_initialize(_In_ uint64_t flags,
+        _In_ const sai_service_method_table_t *services) {
+
+    printf("\n sai_api_initialize start \n");
 
     poeInitialize();
+
+    printf("\n sai_api_initialize end \n");
+}
+
+/**
+ * @brief Retrieve a pointer to the C-style method table for desired SAI
+ * functionality as specified by the given sai_api_id.
+ *
+ * @param[in] api SAI API ID
+ * @param[out] api_method_table Caller allocated method table. The table must
+ * remain valid until the sai_api_uninitialize() is called.
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_api_query(
+        _In_ sai_api_t api,
+        _Out_ void **api_method_table) {
+
+    *api_method_table = &poe_api;
+
+    return SAI_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Uninitialize adapter module. SAI functionalities,
+ * retrieved via sai_api_query() cannot be used after this call.
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_api_uninitialize(void) {
+    return SAI_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Set log level for SAI API module
+ *
+ * The default log level is #SAI_LOG_LEVEL_WARN.
+ *
+ * @param[in] api SAI API ID
+ * @param[in] log_level Log level
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_log_set(
+        _In_ sai_api_t api,
+        _In_ sai_log_level_t log_level) {
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Query SAI object type.
+ *
+ * @param[in] object_id Object id
+ *
+ * @return #SAI_OBJECT_TYPE_NULL when sai_object_id is not valid.
+ * Otherwise, return a valid SAI object type SAI_OBJECT_TYPE_XXX.
+ */
+sai_object_type_t sai_object_type_query(
+        _In_ sai_object_id_t object_id) {
+    return (sai_object_type_t)(object_id & 0xFFFFFFFF);
+}
+
+/**
+ * @brief Query SAI switch id.
+ *
+ * @param[in] object_id Object id
+ *
+ * @return #SAI_NULL_OBJECT_ID when sai_object_id is not valid.
+ * Otherwise, return a valid SAI_OBJECT_TYPE_SWITCH object on which
+ * provided object id belongs. If valid switch id object is provided
+ * as input parameter it should return itself.
+ */
+sai_object_id_t sai_switch_id_query(
+        _In_ sai_object_id_t object_id) {
+    return SAI_NULL_OBJECT_ID;
+}
+
+/**
+ * @brief Generate dump file. The dump file may include SAI state information and vendor SDK information.
+ *
+ * @param[in] dump_file_name Full path for dump file
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_dbg_generate_dump(
+        _In_ const char *dump_file_name) {
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Get SAI object type resource availability.
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[in] attr_count Number of attributes
+ * @param[in] attr_list List of attributes that to distinguish resource
+ * @param[out] count Available objects left
+ *
+ * @return #SAI_STATUS_NOT_SUPPORTED if the given object type does not support resource accounting.
+ * Otherwise, return #SAI_STATUS_SUCCESS.
+ */
+sai_status_t sai_object_type_get_availability(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ uint32_t attr_count,
+        _In_ const sai_attribute_t *attr_list,
+        _Out_ uint64_t *count) {
+    // Implementation here
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Get maximum number of attributes for an object type
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[out] count Maximum number of attribute for an object type
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_get_maximum_attribute_count(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _Out_ uint32_t *count) {
     
-    do {
-        printf("Choose which sai_poe_api_t to create:\n");
-        printf("0. bulk create all objects with default values\n");
-        printf("1. create_poe_device\n");
-        printf("2. create_poe_pse\n");
-        printf("3. create_poe_port\n");
-        printf("4. remove_poe_device\n");
-        printf("5. set_poe_device_attribute\n");
-        printf("6. get_poe_device_attribute\n");
-        printf("7. remove_poe_pse\n");
-        printf("8. set_poe_pse_attribute\n");
-        printf("9. get_poe_pse_attribute\n");
-        printf("10. remove_poe_port\n");
-        printf("11. set_poe_port_attribute\n");
-        printf("12. get_poe_port_attribute\n");
+    switch (object_type)
+    {
+        case SAI_OBJECT_TYPE_POE_DEVICE:
+            *count = SAI_POE_DEVICE_ATTR_END;
+            break;
+        case SAI_OBJECT_TYPE_POE_PSE:
+            *count = SAI_POE_PSE_ATTR_END;
+            break;
+        case SAI_OBJECT_TYPE_POE_PORT:
+            *count = SAI_POE_PORT_ATTR_END;
+            break;
+        default:
+            LOG_ERROR("failed to get valid type");
+            return SAI_STATUS_FAILURE;
+    }
+
+    return SAI_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Get the number of objects present in SAI. Deprecated for backward compatibility.
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[out] count Number of objects in SAI
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_get_object_count(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _Out_ uint32_t *count) {
+    switch (object_type)
+    {
+        KeyValuePair kv;
+        uint8_t i = 0;
+
+        rwlock_excl_acquire(&sai_poe_lock);
+        case SAI_OBJECT_TYPE_POE_DEVICE:
+            dict_get_first(poe_object_device_mapping_ptr, &kv);
+            i++;
+
+            while(dict_get_next(poe_object_device_mapping_ptr, kv.key, &kv)) {
+                i++;
+            }
+            *count = i;
+            break;
+        case SAI_OBJECT_TYPE_POE_PSE:
+            dict_get_first(poe_object_pse_mapping_ptr, &kv);
+            i++;
+
+            while(dict_get_next(poe_object_pse_mapping_ptr, kv.key, &kv)) {
+                i++;
+            }
+            *count = i;
+            break;
+        case SAI_OBJECT_TYPE_POE_PORT:
+            dict_get_first(poe_object_port_mapping_ptr, &kv);
+            i++;
+
+            while(dict_get_next(poe_object_port_mapping_ptr, kv.key, &kv)) {
+                i++;
+            }
+            *count = i;
+            break;
+        default:
+            LOG_ERROR("failed to get valid type");
+            rwlock_excl_release(&sai_poe_lock);
+            return SAI_STATUS_FAILURE;
+    }
+
+    rwlock_excl_release(&sai_poe_lock);
+    return SAI_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Get the number of and list of object keys present in SAI if enough large
+ * list provided, otherwise get the number of object keys only.
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[inout] object_count Number of objects in SAI
+ * @param[inout] object_list List of SAI objects or keys
+ *
+ * @return #SAI_STATUS_SUCCESS on success, #SAI_STATUS_BUFFER_OVERFLOW if list size insufficient, failure status code on error
+ */
+sai_status_t sai_get_object_key(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _Inout_ uint32_t *object_count,
+        _Inout_ sai_object_key_t *object_list) {
+    
+    switch (object_type)
+    {
+        KeyValuePair kv;
+        uint8_t i = 0;
+
+        rwlock_excl_acquire(&sai_poe_lock);
+        case SAI_OBJECT_TYPE_POE_DEVICE:
+            dict_get_first(poe_object_device_mapping_ptr, &kv);
+            object_list[i].key.object_id = kv.key;
+            i++;
+
+            while(dict_get_next(poe_object_device_mapping_ptr, object_list[i-1].key.object_id, &kv)) {
+                object_list[i].key.object_id = kv.key;
+                i++;
+            }
+            *object_count = i;
+            break;
+        case SAI_OBJECT_TYPE_POE_PSE:
+            dict_get_first(poe_object_pse_mapping_ptr, &kv);
+            object_list[i].key.object_id = kv.key;
+            i++;
+
+            while(dict_get_next(poe_object_pse_mapping_ptr, object_list[i-1].key.object_id, &kv)) {
+                object_list[i].key.object_id = kv.key;
+                i++;
+            }
+            *object_count = i;
+            break;
+        case SAI_OBJECT_TYPE_POE_PORT:
+            dict_get_first(poe_object_port_mapping_ptr, &kv);
+            object_list[i].key.object_id = kv.key;
+            i++;
+
+            while(dict_get_next(poe_object_port_mapping_ptr, object_list[i-1].key.object_id, &kv)) {
+                object_list[i].key.object_id = kv.key;
+                i++;
+            }
+            *object_count = i;
+            break;
+        default:
+            LOG_ERROR("failed to get valid type");
+            rwlock_excl_release(&sai_poe_lock);
+            return SAI_STATUS_FAILURE;
+    }
+
+    rwlock_excl_release(&sai_poe_lock);
+    return SAI_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Get the bulk list of valid attributes for a given list of
+ * object keys.
+ *
+ * Only valid attributes for an object are returned.
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[in] object_count Number of objects
+ * @param[in] object_key List of object keys
+ * @param[inout] attr_count List of attr_count. Caller passes the number
+ *    of attribute allocated in. Callee returns with the actual
+ *    number of attributes filled in. If the count is less than
+ *    needed, callee fills with the needed count and do not fill
+ *    the attributes. Callee also set the corresponding status to
+ *    #SAI_STATUS_BUFFER_OVERFLOW.
+ *
+ * @param[inout] attr_list List of attributes for every object. Caller is
+ *    responsible for allocating and freeing buffer for the attributes.
+ *    For list based attribute, e.g., s32list, objlist, callee should
+ *    assume the caller has not allocated the memory for the list and
+ *    should only to fill the count but not list. Then, caller
+ *    can use corresponding get_attribute to get the list.
+ *
+ * @param[inout] object_statuses Status for each object. If the object does
+ *    not exist, callee sets the corresponding status to #SAI_STATUS_INVALID_OBJECT_ID.
+ *    If the allocated attribute count is not large enough,
+ *    set the status to #SAI_STATUS_BUFFER_OVERFLOW.
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_bulk_get_attribute(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ uint32_t object_count,
+        _In_ const sai_object_key_t *object_key,
+        _Inout_ uint32_t *attr_count,
+        _Inout_ sai_attribute_t **attr_list,
+        _Inout_ sai_status_t *object_statuses) {
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Query attribute capability
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[in] attr_id SAI attribute ID
+ * @param[out] attr_capability Capability per operation
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_query_attribute_capability(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ sai_attr_id_t attr_id,
+        _Out_ sai_attr_capability_t *attr_capability) {
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Query an enum attribute (enum or enum list) list of implemented enum values
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[in] attr_id SAI attribute ID
+ * @param[inout] enum_values_capability List of implemented enum values
+ *
+ * @return #SAI_STATUS_SUCCESS on success, #SAI_STATUS_BUFFER_OVERFLOW if list size insufficient, failure status code on error
+ */
+sai_status_t sai_query_attribute_enum_values_capability(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ sai_attr_id_t attr_id,
+        _Inout_ sai_s32_list_t *enum_values_capability) {
+    
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Query statistics capability for statistics bound at object level
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[inout] stats_capability List of implemented enum values, and the statistics modes (bit mask) supported per value
+ *
+ * @return #SAI_STATUS_SUCCESS on success, #SAI_STATUS_BUFFER_OVERFLOW if lists size insufficient, failure status code on error
+ */
+sai_status_t sai_query_stats_capability(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _Inout_ sai_stat_capability_list_t *stats_capability) {
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+/**
+ * @brief Bulk objects get statistics.
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type Object type
+ * @param[in] object_count Number of objects to get the stats
+ * @param[in] object_key List of object keys
+ * @param[in] number_of_counters Number of counters in the array
+ * @param[in] counter_ids Specifies the array of counter ids
+ * @param[in] mode Statistics mode
+ * @param[inout] object_statuses Array of status for each object. Length of the array should be object_count. Should be looked only if API return is not SAI_STATUS_SUCCESS.
+ * @param[out] counters Array of resulting counter values.
+ *    Length of counters array should be object_count*number_of_counters.
+ *    Counter value of I object and J counter_id = counter[I*number_of_counters + J]
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_bulk_object_get_stats(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ uint32_t object_count,
+        _In_ const sai_object_key_t *object_key,
+        _In_ uint32_t number_of_counters,
+        _In_ const sai_stat_id_t *counter_ids,
+        _In_ sai_stats_mode_t mode,
+        _Inout_ sai_status_t *object_statuses,
+        _Out_ uint64_t *counters) {
+    return SAI_STATUS_NOT_SUPPORTED;
+}
+
+/**
+ * @brief Bulk objects clear statistics.
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type Object type
+ * @param[in] object_count Number of objects to get the stats
+ * @param[in] object_key List of object keys
+ * @param[in] number_of_counters Number of counters in the array
+ * @param[in] counter_ids Specifies the array of counter ids
+ * @param[in] mode Statistics mode
+ * @param[inout] object_statuses Array of status for each object. Length of the array should be object_count. Should be looked only if API return is not SAI_STATUS_SUCCESS.
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_bulk_object_clear_stats(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ uint32_t object_count,
+        _In_ const sai_object_key_t *object_key,
+        _In_ uint32_t number_of_counters,
+        _In_ const sai_stat_id_t *counter_ids,
+        _In_ sai_stats_mode_t mode,
+        _Inout_ sai_status_t *object_statuses) {
+    return SAI_STATUS_NOT_SUPPORTED;
+}
+
+/**
+ * @brief Query the HW stage of an attribute for the specified object type
+ *
+ * @param[in] switch_id SAI Switch object id
+ * @param[in] object_type SAI object type
+ * @param[in] attr_count Count of attributes
+ * @param[in] attr_list List of attributes
+ * @param[out] stage HW stage of the attributes. Length of the array should be attr_count. Caller must allocate the buffer.
+ *
+ * @return #SAI_STATUS_SUCCESS on success, failure status code on error
+ */
+sai_status_t sai_query_object_stage(
+        _In_ sai_object_id_t switch_id,
+        _In_ sai_object_type_t object_type,
+        _In_ uint32_t attr_count,
+        _In_ const sai_attribute_t *attr_list,
+        _Out_ sai_object_stage_t *stage) {
+    return SAI_STATUS_NOT_IMPLEMENTED;
+}
+
+sai_status_t sai_query_api_version(
+        _Out_ sai_api_version_t *version) {
+
+    *version = SAI_API_VERSION;
+        printf("\nMRVL POE using SAI-%u.%u.%u \n",
+               (SAI_API_VERSION/10000),
+               ((SAI_API_VERSION%10000)/100),
+               (SAI_API_VERSION%10000)%100);
         
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
-
-        printf("Enter switch ID: ");
-        scanf("%d", &switch_id);
-        
-        printf("Enter attribute count: ");
-        scanf("%u", &attr_count);
-        
-
-        switch (choice) {
-            case 0:
-                switch_id = 1;
-                attr_count = 1;
-                strcpy(attr_list[0].value.chardata, "integrated-mcu");
-                create_poe_device(&poe_device_id, switch_id, attr_count, attr_list);
-                attr_list[0].value.u32 = 1;
-                attr_list[1].value.oid = poe_device_id;
-                attr_count = 2;
-                create_poe_pse(&poe_pse_id[pse_create_index], switch_id, attr_count, attr_list);
-                attr_list[0].value.u32 = 1;
-                attr_list[1].value.oid = poe_device_id;
-                attr_count = 2;
-                create_poe_port(&poe_port_id[port_create_index], switch_id, attr_count, attr_list);
-                pse_create_index++;
-                attr_list[0].value.u32 = 2;
-                attr_list[1].value.oid = poe_device_id;
-                attr_count = 2;
-                port_create_index = 1;
-                create_poe_port(&poe_port_id[port_create_index], switch_id, attr_count, attr_list);
-                pse_create_index++;
-            case 1:
-                create_poe_device(&poe_device_id, switch_id, attr_count, attr_list);
-                break;
-            case 2:
-                printf("Enter value for attribute %d, pse index: ", 0);
-                scanf("%d", &attr_list[0].value.u32);
-                attr_list[1].value.oid = poe_device_id;
-                create_poe_pse(&poe_port_id[pse_create_index], switch_id, attr_count, attr_list);
-                pse_create_index++;
-                break;
-            case 3:
-                printf("Enter value for attribute %d, port index: ", 0);
-                scanf("%d", &attr_list[0].value.u32);
-                attr_list[1].value.oid = poe_device_id;
-                create_poe_port(&poe_port_id[port_create_index], switch_id, attr_count, attr_list);
-                break;
-            case 4:
-                remove_poe_device(poe_device_id);
-                break;
-            case 5:
-                printf("Please choose the attribute:\n"
-                          "SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE = 6\n");
-                
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-                attr_list[0].id = choice;
-
-                printf("Enter your value for the attribute: ");
-                scanf("%d", &value);
-                attr_list[0].value = (sai_attribute_value_t)value;
-
-                set_poe_device_attribute(poe_device_id, attr_list);
-                break;
-            case 6:
-                printf("Please choose the attribute:\n"
-                          "SAI_POE_DEVICE_ATTR_HARDWARE_INFO = 0,\n"
-                          "SAI_POE_DEVICE_ATTR_POE_PSE_LIST = 1,\n"
-                          "SAI_POE_DEVICE_ATTR_POE_PORT_LIST = 2,\n"
-                          "SAI_POE_DEVICE_ATTR_TOTAL_POWER = 3,\n"
-                          "SAI_POE_DEVICE_ATTR_POWER_CONSUMPTION = 4,\n"
-                          "SAI_POE_DEVICE_ATTR_VERSION = 5,\n"
-                          "SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE = 6\n");
-
-
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-                attr_list[0].id = choice;
-
-                get_poe_device_attribute(poe_device_id, attr_count, attr_list);
-                break;
-            case 7:
-                remove_poe_pse(poe_pse_id[0]);
-                break;
-            case 8:
-                printf("pse does not have any set attributes ");
-                set_poe_pse_attribute(poe_pse_id[0], attr_list);
-                break;
-            case 9:
-                printf("Please choose the attribute:\n"
-                "SAI_POE_PSE_ATTR_PSE_SOFTWARE_VERSION = 2,\n"
-                "SAI_POE_PSE_ATTR_PSE_HARDWARE_VERSION = 3,\n"
-                "SAI_POE_PSE_ATTR_TEMPERATURE = 4,\n"
-                "SAI_POE_PSE_ATTR_PSE_STATUS = 5\n");
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-
-                attr_list[0].id = choice;
-                get_poe_pse_attribute(poe_pse_id[0], attr_count, attr_list);
-                break;
-            case 10:
-                remove_poe_port(poe_port_id[0]);
-                break;
-            case 11:
-                printf("Please choose the attribute:\n"
-                    "SAI_POE_PORT_ATTR_ADMIN_ENABLED_STATE = 3,\n"
-                    "SAI_POE_PORT_ATTR_POWER_LIMIT = 4,\n"
-                    "SAI_POE_PORT_ATTR_POWER_PRIORITY = 5,\n");
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-                attr_list[0].id = choice;
-
-                printf("Enter your value for the attribute: ");
-                scanf("%d", &value);
-                attr_list[0].value = (sai_attribute_value_t)value;
-
-                set_poe_port_attribute(poe_port_id[0], attr_list);
-                break;
-            case 12:
-            printf("Please choose the attribute:\n"
-                    "SAI_POE_PORT_ATTR_STANDARD = 2,\n"
-                    "SAI_POE_PORT_ATTR_ADMIN_ENABLED_STATE = 3,\n"
-                    "SAI_POE_PORT_ATTR_POWER_LIMIT = 4,\n"
-                    "SAI_POE_PORT_ATTR_POWER_PRIORITY = 5,\n"
-                    "SAI_POE_PORT_ATTR_CONSUMPTION = 6,\n"
-                    "SAI_POE_PORT_ATTR_STATUS = 7\n");
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-                attr_list[0].id = choice;
-
-                get_poe_port_attribute(poe_port_id[0], attr_count, attr_list);
-                break;
-            default:
-                printf("Invalid choice\n");
-                break;
-        }
-
-        printf("Do you want to continue? (y/n): ");
-        scanf(" %c", &exit_choice);
-    } while (exit_choice == 'y' || exit_choice == 'Y'); 
+    return SAI_STATUS_SUCCESS;
 }

@@ -415,6 +415,8 @@ static POE_OP_RESULT_ENT poeInitFw ()
     EXTHWG_POE_ret_TYP                          driver_ret_val;
     int32_t                                     time_before, time_after;
 
+    printf("poeInitFw\n");
+
     if ((boardInfoDbPtr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_POE_NOT_SUPPORTED_E) || (boardInfoDbPtr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_LAST_E)){
         return POE_OP_FAILED_E;
     }
@@ -428,6 +430,8 @@ static POE_OP_RESULT_ENT poeInitFw ()
 
     dev_num = 0; /* to do ? */
 
+    printf("poeInitFw type \n");
+
     if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
         switch (boardInfoDbPtr->data_PTR->poe.mcuType){
         case PDL_POE_MCU_TYPE_CM3_E:
@@ -439,7 +443,9 @@ static POE_OP_RESULT_ENT poeInitFw ()
             break;
         }
 
+        printf("exthwgPoeIpcInit\n");
         driver_ret_val = exthwgPoeIpcInit(exhw_mcuType, (GT_U8)dev_num);
+        printf("end exthwgPoeIpcInit\n");
         
     }
     else if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
@@ -449,6 +455,7 @@ static POE_OP_RESULT_ENT poeInitFw ()
         return POE_OP_FAILED_E;
     }
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
+        printf("failed driver_ret_val\n");
         return POE_OP_FAILED_E;
     }
 
@@ -463,7 +470,7 @@ static POE_OP_RESULT_ENT poeInitFw ()
  * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
-static POE_OP_RESULT_ENT poeDownloadFw ()
+static POE_OP_RESULT_ENT poeDownloadFw()
 {
 
     ExthwgPoeIpcMcuTypeEnt                      exhw_mcuType=ExthwgPoeIpcMcuTypeCm3;
@@ -471,9 +478,6 @@ static POE_OP_RESULT_ENT poeDownloadFw ()
     int32_t                                     time_before, time_after, num_of_retries = 0, max_num_of_retries = 10;
     BOOLEAN                                     valid_firmware_exist = FALSE, version_ignore_flag = TRUE, expected_userbyte=FALSE;
     BOOLEAN                                     latest_ver_exist = FALSE;
-#ifdef _ROS_WM
-    char c = 'X';
-#endif
 
     switch (boardInfoDbPtr->data_PTR->poe.mcuType) {
         case PDL_POE_MCU_TYPE_CM3_E:
@@ -487,17 +491,22 @@ static POE_OP_RESULT_ENT poeDownloadFw ()
 
     /* if we performed a valid perpetual restart then run firmware only if firmware is volatile */
     if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
-        driver_ret_val = exthwgPoeIpcRunFirmware(exhw_mcuType, boardInfoDbPtr->data_PTR->poe.fwFileName);
+        /* TODO: update hardcoded path */
+        driver_ret_val = exthwgPoeIpcRunFirmware(exhw_mcuType, "/usr/bin/cm3_sdk.bin");
+        printf("exthwgPoeIpcRunFirmware ret_val %d\n", driver_ret_val);
     }
     else if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
         // not supported
+        printf("not supported\n");
     }
     else {
         return POE_OP_FAILED_E;
+        printf("failed\n");
     }
 
 
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
+        printf("failed, driver return value %d\n", driver_ret_val);
         return POE_OP_FAILED_E;
     }
 
@@ -515,9 +524,19 @@ static POE_OP_RESULT_ENT poeDownloadFw ()
  */
 POE_OP_RESULT_ENT sharedMemoryInitialize() {
     
-    poeInitFw();
+    printf("sharedMemoryInitialize\n");
 
-    poeDownloadFw();
+    if (poeInitFw() != POE_OP_OK_E) {
+        printf("poeInitFw failed\n");
+        return POE_OP_FAILED_E;
+    }
+
+    if(poeDownloadFw() != POE_OP_OK_E) {
+        printf("poeDownloadFw failed\n");
+        return POE_OP_FAILED_E;
+    }
+
+    printf("end sharedMemoryInitialize\n");
 
     return POE_OP_OK_E;
 }
@@ -535,7 +554,7 @@ POE_OP_RESULT_ENT boardInfoInitialize() {
     XML_PARSER_ROOT_DESCRIPTOR_TYP                  xmlRoot;
     PDLIB_OS_CALLBACK_API_STC                        callbacks;
     char                                           *baseNamePtr, baseName[256],
-                                                   fullPath[256] = "/local/store/sai-poe/sai_poe_library/board_info/rdac5xpoe.xml";
+                                                   fullPath[256] = "/usr/bin/rdac5xpoe.xml";
     strcpy(baseName, fullPath);
     baseNamePtr = dirname(baseName);
     
@@ -584,6 +603,9 @@ POE_OP_RESULT_ENT boardInfoInitialize() {
 POE_OP_RESULT_ENT poeInitialize(void) {
     
     POE_OP_RESULT_ENT result = POE_OP_OK_E;
+    LOG_PRINT("start PoE initalization");
+    printf("\n sai_api_initialize poeInitialize \n");
+
     /* init semaphore */
     rwlock_excl_init(&poe_v3_lock);
 
@@ -591,11 +613,13 @@ POE_OP_RESULT_ENT poeInitialize(void) {
 
     /* init board info (from external db) */
     result = boardInfoInitialize();
-    
+
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize board info");
         goto exit;
     }
+
+    LOG_PRINT("successful board info initalization");
 
     /* init databases */
     result = databaseInitialize();
@@ -604,12 +628,16 @@ POE_OP_RESULT_ENT poeInitialize(void) {
         goto exit;
     }
 
+    LOG_PRINT("successful db initalization");
+
     /* init shared memory */
     result = sharedMemoryInitialize();
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize shared memory");
         goto exit;
     }
+
+    LOG_PRINT("successful shared memory initalization");
 
     /* set poe power banks */
     result = poePowerBankInitialize();
@@ -618,6 +646,8 @@ POE_OP_RESULT_ENT poeInitialize(void) {
         goto exit;
     }
 
+    LOG_PRINT("successful power bank initalization");
+
     /* set poe port matrix */
     result = poePortMatrixInitialize();
     if(result != POE_OP_OK_E) {
@@ -625,12 +655,16 @@ POE_OP_RESULT_ENT poeInitialize(void) {
         goto exit;
     }
 
+    LOG_PRINT("successful port matrix initalization");
+
     /* set poe port standard */
     result = poePortStandardInitialize();
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize port standard");
         goto exit;
     }
+
+    LOG_PRINT("successful port standard initalization");
 
 exit:
     rwlock_excl_release(&poe_v3_lock);
@@ -1666,9 +1700,3 @@ uint32_t swap32(uint32_t value) {
            ((value & 0x0000FF00) << 8)  |     // Move byte 1 to byte 2
            ((value & 0x000000FF) << 24);      // Move byte 0 to byte 3
 }
-
-
-/* TEMP - main() moved to sai_poe for the sai menu options */
-// void main() {
-//     poe_initialize();
-// }

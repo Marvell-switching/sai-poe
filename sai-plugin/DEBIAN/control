@@ -1,9 +1,0 @@
-Package: sai-poe-sdk
-Version: 1.0
-Architecture: arm64
-Maintainer: Daniela Murin <dmurin@marvell.com>
-Description: A package with poe functionality
- Depends: libc6 (>= 2.15), libstdc++6 (>= 4.9)
-Homepage: https://github.com/Marvell-switching
-Priority: optional
-

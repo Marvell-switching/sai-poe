@@ -558,6 +558,7 @@ bool extDrvIpc15BytesMsgRead(
 
 typedef unsigned int GT_STATUS;
 typedef uint8_t     GT_U8;
+typedef uint32_t     GT_U32;
 typedef uint32_t    GT_PHYSICAL_PORT_NUM;
 #define IN
 

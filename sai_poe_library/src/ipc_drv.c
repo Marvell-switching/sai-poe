@@ -54,30 +54,28 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
     uint8_t devNum
 )
 {
-#ifndef _ROS_WM
-    uint32_t rc;
-#endif
-      
-    // hwInfoPtr = cpssDrvHwPpHwInfoStcPtrGet(devNum , 0);
-    // if (hwInfoPtr == NULL)
-    //    return EXTHWG_POE_ret_failed_CNS;
+    uint32_t rc, core = 2;
 
-#ifndef _ROS_WM
+    /* seg fault -xpsCpssInit(5); */
 
     if (mcuType == ExthwgPoeIpcMcuTypeDragonite) {
         // not supported
     }
     else if (mcuType == ExthwgPoeIpcMcuTypeCm3) { /* CM3 */
-
-        // rc = extDrvIpcCm3Init(devNum, 2); /* core 2 */
-        // if (rc != 0){
-        //     return EXTHWG_POE_ret_failed_CNS;
-        // }
+        printf("exthwgPoeIpcInit: devNum=%d, core=%d\n", devNum, core);
+        rc = extDrvIpcCm3Init(devNum, core); /* core 2 */
+        if (rc != 0){
+            printf("failed\n");
+            return EXTHWG_POE_ret_failed_CNS;
+        }
+        else {
+            printf("returned ok\n");
+        }
     }
     else {
+        printf("invalid mcu type\n");
         return EXTHWG_POE_ret_failed_CNS;
     }
-#endif
 
     /* save mcu type */
     exthwgPoeIpcMcuType = mcuType;
@@ -107,16 +105,8 @@ static EXTHWG_POE_ret_TYP exthwpPoeIpcRead(
     uint32_t timeBefore = 0, timeAfter = 0, debugIndex;
     uint32_t ret; 
 
-    // if (exthwgPoeIpcDebugMsgTimeEnable == true){
-    //     //timeBefore = OSTIMG_ms_clock;
-    // }
-#ifndef _ROS_WM
-    // ret = extDrvIpcPoeMsgRead(opcode, readRequestDataLen, readRequestDataPtr, readResponseDataLenPtr, readResponseDataPtr);
-#else
-    *readResponseDataLenPtr = 0;
-    *readResponseDataPtr = 0;
-    ret = 0;
-#endif  
+    ret = extDrvIpcPoeMsgRead(opcode, readRequestDataLen, readRequestDataPtr, readResponseDataLenPtr, readResponseDataPtr);
+
     return (ret==0)?EXTHWG_POE_ret_ok_CNS:EXTHWG_POE_ret_failed_CNS;
 }
 /* END OF EXTHWG_POE_IPc_read */
@@ -138,14 +128,10 @@ static EXTHWG_POE_ret_TYP exthwpPoeIpcWrite(
     bool isDebug
 )
 {
-#ifndef _ROS_WM
-    // if (extDrvIpcPoeMsgWrite(opcode, writeRequestDataLen, writeRequestDataPtr, isDebug) == 0)
-        // return EXTHWG_POE_ret_ok_CNS;
-    // else
-    //     return EXTHWG_POE_ret_failed_CNS;
-#else
-    return EXTHWG_POE_ret_ok_CNS;
-#endif
+    if (extDrvIpcPoeMsgWrite(opcode, writeRequestDataLen, writeRequestDataPtr, isDebug) == 0)
+        return EXTHWG_POE_ret_ok_CNS;
+    else
+        return EXTHWG_POE_ret_failed_CNS;
 }
 /* END OF EXTHWG_POE_IPc_write */
 
@@ -172,15 +158,14 @@ bool exthwgPoeIpcSendReceiveMsg(
     uint32_t responseLen, i;
     uint8_t *debugKeepPtr = NULL;
     bool isPrintable=true;
-#ifndef _ROS_WM
-    // uint32_t origRetries=EXTDRVIPC_WAIT_FOR_RESPONSE_NUM_OF_RETRIES;
-#endif
+    uint32_t origRetries=EXTDRVIPC_WAIT_FOR_RESPONSE_NUM_OF_RETRIES;
 
-    if (send==true)
+    if (send==true) {
         return false;
-        // returnCode = EXTHWP_POE_IPc_write(opCode32, dataLen, dataPtr, false);
+        returnCode = exthwpPoeIpcWrite(opCode32, dataLen, dataPtr, false);
+    }
     else {
-        // returnCode = EXTHWP_POE_IPc_read(opCode32, dataLen, dataPtr, &responseLen, readBuf);
+        returnCode = exthwpPoeIpcRead(opCode32, dataLen, dataPtr, &responseLen, readBuf);
         if (responseLen != dataLen){
             LOG_ERROR("PoE FW response length is different than the request length\n");
         }
@@ -215,9 +200,9 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcDownloadFirmware(
     if (mcuType==ExthwgPoeIpcMcuTypeDragonite) {
         // not supported
     } else {
-        // if (extDrvIpcCm3FwDownload(2, buf, size) != 0) { /* for CM3 use core 2*/
-        //     return EXTHWG_POE_ret_failed_CNS;
-        // }
+        if (extDrvIpcCm3FwDownload(2, buf, size) != 0) { /* for CM3 use core 2 - perpetual PoE support */
+            return EXTHWG_POE_ret_failed_CNS;
+        }
     }
 
 #endif
@@ -241,88 +226,66 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcRunFirmware(
 )
 {
  	EXTHWG_POE_ret_TYP ret = EXTHWG_POE_ret_ok_CNS;
-//     char *buf = NULL /*, fw_file_name[100]={0} */;
-//     uint32_t fileSize;
-// #ifndef _ROS_WM
-//     int         i;
-// #endif
-//     /* In order to reset DTCM area, which is 0xB00 *words* long - we use a /16
-// 	   buffer - in order not to alloc to much on the thread's stack
-// 	*/
-// 	#define NOF_DTCM_CHUNKS	16
-// 	#define DTCM_CHUNK 	(0xB00*4/NOF_DTCM_CHUNKS)
-// 	uint32_t dtcmBuf[DTCM_CHUNK] = {0xff};
-//     // struct stat st;
-//     FILE *file;
+    char *buf = NULL , fw_file_name[100]={0} ;
+    uint32_t fileSize;
+    FILE *firmwareFile;
 
-// 	if (!exthwpPoeIpcFwLoaded){
-		/*remove protection
-	    if (GT_OK != extDrvDragoniteProtect(GT_FALSE))
-	        ret = EXTHWG_POE_ret_failed_CNS;*/
-
-        // if(pdlPowerPoEAttributesGet(&pdl_poe_params) != PDL_OK) {
-        //     // DEBUGG_log_MAC(EXTHWG_POE_debug_fw_flag)
-        //     //         (DEBUGG_func_name_MAC(), "PDL failed to read - pdlPowerPoEAttributesGet\n");
-
-        //     return EXTHWG_POE_ret_failed_CNS;
-        // }
-
-        // memcpy (&fw_file_name, pdl_poe_params.fwFileName, sizeof(fw_file_name));
-		// /* make the path NULL-terminated */
-		// fw_file_name[sizeof(fw_file_name)-1] = '\0';
+	if (!exthwpPoeIpcFwLoaded){
+		/* make the path NULL-terminated */
+		fw_file_name[sizeof(fw_file_name)-1] = '\0';
         
-//         if (stat(fwFileName, &st) == 0){
-//             fileSize = st.st_size;
+        firmwareFile = fopen(fwFileName, "rb");
+        if (!firmwareFile) {
+            perror("Error opening firmware file");
+            return EXTHWG_POE_ret_failed_CNS;
+        }
 
-//             file = fopen(fwFileName, "r");
-//             if (file == NULL) {
-//                 perror("Error opening file");
-//                 return EXTHWG_POE_ret_failed_CNS;
-//             }
+        /* Get the size of the firmware file */
+        fseek(firmwareFile, 0, SEEK_END);
+        long firmwareSize = ftell(firmwareFile);
+        fseek(firmwareFile, 0, SEEK_SET);
 
-//             buf = (char *)malloc(fileSize);
-//             if (buf == NULL)
-//             	return EXTHWG_POE_ret_failed_CNS;
+        /* Allocate buffer to hold the firmware */
+        char* buffer = (char*)malloc(firmwareSize);
+        if (!buffer) {
+            perror("Error allocating memory");
+            fclose(firmwareFile);
+            return EXTHWG_POE_ret_failed_CNS;
+        }
 
-//             ssize_t bytesRead = read(file, buf, fileSize);
-//             if (bytesRead == -1) {
-//                 perror("Error reading file");
-//                 free(buf); // Free allocated memory
-//                 close(file);
-//                 return EXTHWG_POE_ret_failed_CNS;
-//             }
+        /* Read the firmware file into the buffer */
+        size_t bytesRead = fread(buffer, 1, firmwareSize, firmwareFile);
+        if (bytesRead != firmwareSize) {
+            perror("Error reading firmware file");
+            free(buffer);
+            fclose(firmwareFile);
+            return EXTHWG_POE_ret_failed_CNS;
+        }
 
-// #ifndef _ROS_WM
-//             /* call to FW download API */
-//             if (exthwgPoeIpcDownloadFirmware(buf, fileSize, mcuType) != EXTHWG_POE_ret_ok_CNS)
-//                 // OSSYSG_fatal_error("PoE firmware download failed");
+        /* call to FW download API */
+        if (exthwgPoeIpcDownloadFirmware(buf, fileSize, mcuType) != EXTHWG_POE_ret_ok_CNS)
+            ret = EXTHWG_POE_ret_failed_CNS;
 
-//             if (mcuType == ExthwgPoeIpcMcuTypeDragonite){
-                
-//                 /* not supported */
-            
-//             }
-//             else if (mcuType == ExthwgPoeIpcMcuTypeCm3){
-                
-//                 // if (extDrvIpcCm3UnresetSet(true, 2) != 0) /* core 2*/
-//                 //     ret = EXTHWG_POE_ret_failed_CNS;
-//             }
-//             else {
-//                 // OSSYSG_fatal_error("Invalid mcu type");
-//             }
-// #endif
-//         }
-//         else {
-//             return EXTHWG_POE_ret_failed_CNS;
-//         }
-// 	}
-// #ifndef _ROS_WM
+        /* check the MCU type */
+        if (mcuType == ExthwgPoeIpcMcuTypeDragonite){
+            /* not supported */
+        }
+        else if (mcuType == ExthwgPoeIpcMcuTypeCm3){
+            if (extDrvIpcCm3UnresetSet(true, 2) != 0) /* core 2*/
+                ret = EXTHWG_POE_ret_failed_CNS;
+        }
+        else {
+            LOG_ERROR("Invalid MCU type\n");
+        }
+	}
 
-// /* fall through in case ok */
-// failWriteFree:
-// #endif
-// 	if (buf)
-// 		free(buf);
+/* fall through in case ok */
+failWriteFree:
+    /* Close the firmware file */
+    fclose(firmwareFile);
+
+	if (buf)
+		free(buf);
 
 	return ret;
 }
