@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <h/sai/saitypes.h>
+#include <SAI/inc/saitypes.h>
 
 /* used by SAI - struct is in SAI coding format */
 typedef struct poe_object_id_t {
