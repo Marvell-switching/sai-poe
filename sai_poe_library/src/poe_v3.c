@@ -23,7 +23,7 @@
 #include <PDLIB/h/pdlib/init/pdlInit.h>
 #include <PDLIB/h/pdlib/lib/pdlLib.h>
 #include <h/utils/log.h>
-#include <h/sai/saipoe.h>
+#include <SAI/inc/sai.h>
 #include <h/ipc_drv.h>
 
 /* include global variables */
