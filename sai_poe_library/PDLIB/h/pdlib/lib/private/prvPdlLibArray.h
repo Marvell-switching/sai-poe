@@ -1,5 +1,20 @@
-/* Copyright (C) 2023 Marvell International Ltd.
-   This program is provided "as is" without any warranty of any kind, and is distributed under the applicable Marvell limited use license agreement. */
+/*
+ *  Copyright (C) 2024, MARVELL. All rights reserved.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License"); you may
+ *    not use this file except in compliance with the License. You may obtain
+ *    a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    THIS CODE IS PROVIDED ON AN  *AS IS* BASIS, WITHOUT WARRANTIES OR
+ *    CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
+ *    LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
+ *    FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
+ *
+ *    See the Apache Version 2.0 License for specific language governing
+ *    permissions and limitations under the License.
+ *
+ */
+
 /**
  * @file-docAll core\ez_bringup\h\lib\private\prvpdllibarray.h.
  *
@@ -10,16 +25,6 @@
 
 #define __prvPdlLibPdlLibArrayh
 /**
-********************************************************************************
- * @file prvPdlLibArray.h
- * @copyright
- *    (c), Copyright (C) 2023, Marvell International Ltd.
- *    THIS CODE CONTAINS CONFIDENTIAL INFORMATION OF MARVELL SEMICONDUCTOR, INC.
- *    NO RIGHTS ARE GRANTED HEREIN UNDER ANY PATENT, MASK WORK RIGHT OR COPYRIGHT
- *    OF MARVELL OR ANY THIRD PARTY. MARVELL RESERVES THE RIGHT AT ITS SOLE
- *    DISCRETION TO REQUEST THAT THIS CODE BE IMMEDIATELY RETURNED TO MARVELL.
- *    THIS CODE IS PROVIDED "AS IS". MARVELL MAKES NO WARRANTIES, EXPRESSED,
- *    IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY, COMPLETENESS OR PERFORMANCE.
 ********************************************************************************
  *
  * @brief Platform driver layer - Library private declarations and APIs
