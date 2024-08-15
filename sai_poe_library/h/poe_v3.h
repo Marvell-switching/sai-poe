@@ -24,6 +24,8 @@
 #include <SAI/inc/saitypes.h>
 
 /* used by SAI - struct is in SAI coding format */
+#pragma pack(push, 1)
+
 typedef struct poe_object_id_t {
     uint32_t id;
     uint32_t object_type;
@@ -806,7 +808,7 @@ POE_PORT_HW_TYPE_ENT poeGetPortpoeHwe(uint32_t frontPanelIndex);
 bool poePortGetPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex);
 bool poePortGetSecondPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalIndex);
 bool exthwgpoeIpcSendRecieveMsg(bool send, uint32_t opCode, uint8_t dataLen, uint8_t *data);
-POE_OP_RESULT_ENT poeV3SendReceiveMsg(POE_V3_MSG_LEVEL msge, POE_V3_MSG_DIRECTION direction, uint16_t msgId, uint8_t dataLen, void *dataPtr);
+POE_OP_RESULT_ENT poeV3SendReceiveMsg(POE_V3_MSG_LEVEL msge, POE_V3_MSG_DIRECTION direction, uint16_t msgId, uint8_t dataLen, uint8_t *dataPtr);
 POE_OP_RESULT_ENT poePortMatrixInitialize();
 POE_OP_RESULT_ENT poePortStandardInitialize();
 POE_OP_RESULT_ENT poePowerBankInitialize();
@@ -829,5 +831,9 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption(uint32_t frontPanelIndex, sai_poe_p
 POE_OP_RESULT_ENT poePortGetStatus (uint32_t frontPanelIndex, uint32_t *statusPtr);
 uint16_t swap16(uint16_t value);
 uint32_t swap32(uint32_t value);
+uint32_t getNumOfPse();
+uint32_t getNumOfPorts();
+
+#pragma pack(pop)
 
 #endif /** __POE_V3_H__ */

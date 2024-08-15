@@ -15,12 +15,13 @@
  *
  */
 
+#include <string.h>
+#include "assert.h"
+
+#include <h/poe_v3.h>
+#include <SAI/inc/sai.h>
 #include <h/utils/dictionary.h>
 #include <h/utils/lock.h>
-#include <h/poe_v3.h>
-#include <string.h>
-#include <SAI/inc/sai.h>
-#include "assert.h"
 #include <h/utils/log.h>
 
 #define SAI_MAJOR 1
@@ -175,8 +176,9 @@ bool poe_device_is_initialized()
  */
 sai_status_t poe_device_initialize()
 {
-    sai_status_t status = SAI_STATUS_SUCCESS;;
-
+    sai_status_t status = SAI_STATUS_SUCCESS;
+    uint32_t num_of_entries = 0;
+    
     if (poe_device_is_initialized()) {
         status = SAI_STATUS_SUCCESS;
         goto exit;
@@ -186,22 +188,42 @@ sai_status_t poe_device_initialize()
     g_sai_db_ptr->is_poe_device_initialized = true;
 
     /* create the dictionaries */
-    /* placeholder - max number of entries for now */
-    poe_object_device_mapping_ptr = create_dictionary(1);
+    num_of_entries = getNumOfDevices();
+    if (num_of_entries == 0) {
+        LOG_ERROR("failed to get valid number of device entries");
+        status = SAI_STATUS_FAILURE;
+        goto exit;
+    }
+
+    poe_object_device_mapping_ptr = create_dictionary(num_of_entries);
     if(!poe_object_device_mapping_ptr) {
         LOG_ERROR("failed to create dictionary");
         status = SAI_STATUS_FAILURE;
         goto exit;
     }
 
-    poe_object_pse_mapping_ptr = create_dictionary(16);
+    num_of_entries = getNumOfPse();
+    if (num_of_entries == 0) {
+        LOG_ERROR("failed to get valid number of PSE entries");
+        status = SAI_STATUS_FAILURE;
+        goto exit;
+    }
+
+    poe_object_pse_mapping_ptr = create_dictionary(num_of_entries);
     if(!poe_object_pse_mapping_ptr) {
         LOG_ERROR("failed to create dictionary");
         status = SAI_STATUS_FAILURE;
         goto exit;
     }
 
-    poe_object_port_mapping_ptr = create_dictionary(48);
+    num_of_entries = getNumOfPorts();
+    if (num_of_entries == 0) {
+        LOG_ERROR("failed to get valid number of port entries");
+        status = SAI_STATUS_FAILURE;
+        goto exit;
+    }
+
+    poe_object_port_mapping_ptr = create_dictionary(getNumOfPorts);
     if(!poe_object_port_mapping_ptr) {
         LOG_ERROR("failed to create dictionary");
         status = SAI_STATUS_FAILURE;
@@ -679,11 +701,7 @@ const sai_poe_api_t poe_api = {
 sai_status_t sai_api_initialize(_In_ uint64_t flags,
         _In_ const sai_service_method_table_t *services) {
 
-    printf("\n sai_api_initialize start \n");
-
     poeInitialize();
-
-    printf("\n sai_api_initialize end \n");
 }
 
 /**
@@ -1123,10 +1141,11 @@ sai_status_t sai_query_api_version(
         _Out_ sai_api_version_t *version) {
 
     *version = SAI_API_VERSION;
-        printf("\nMRVL POE using SAI-%u.%u.%u \n",
-               (SAI_API_VERSION/10000),
-               ((SAI_API_VERSION%10000)/100),
-               (SAI_API_VERSION%10000)%100);
+    
+    /*printf("\nMRVL POE using SAI-%u.%u.%u \n",
+            (SAI_API_VERSION/10000),
+            ((SAI_API_VERSION%10000)/100),
+            (SAI_API_VERSION%10000)%100);*/
         
     return SAI_STATUS_SUCCESS;
 }

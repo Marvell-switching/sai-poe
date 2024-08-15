@@ -46,7 +46,6 @@ typedef enum {
  * @return 
  */
 bool exthwgPoeIpcSendReceiveMsg(
-    bool send,
     uint32_t opCode32,
     uint8_t dataLen,
     uint8_t *dataPtr
@@ -86,11 +85,15 @@ extern void exthwgPoeIpcRemoveFwFlagLoaded(void);
  * @brief Initialize the EXTHWG POE IPC module.
  * 
  * @param[in] mcuType The type of MCU for the initialization.
- * @param[in] devNum The device number.
+ * @param[in] fielpath The path to the PoE firmware file.
  * 
  * @return EXTHWG_POE_ret_TYP Returns the initialization status.
  */
 EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
     ExthwgPoeIpcMcuTypeEnt mcuType,
-    uint8_t devNum
+    char* filepath
 );
+
+extern int ipc_poe_init(uint32_t service_cpu_num /*core*/, char *buf, unsigned buf_size);
+
+extern int ipc_poe_send_receive_message(uint32_t opcode32, uint32_t len, uint8_t* data_ptr, uint32_t *response_len);
