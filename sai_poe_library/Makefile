@@ -1,5 +1,5 @@
 # Specify the compiler
-CC := /swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-gcc
+CC ?= /swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-gcc
 
 # Compiler flags
 CFLAGS = -g -O0 -I. -I./PDLIB -I./h -I./PDLIB/h/ -I./SAI -I./SAI/inc -I./SAI/experimental -I./SAI/meta -fPIC
