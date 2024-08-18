@@ -17,7 +17,7 @@ SRCS := $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '$(EXCLUDE_DIR)/*
 OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 # List of libraries
-PATHS = /local/store/sai-poe/sai-poe/usr/lib/libapp_scpu.a
+PATHS ?= /local/store/sai-poe/sai-poe/usr/lib/libapp_scpu.a
 
 # Linker flags
 LDFLAGS := -shared -lpthread $(PATHS)
