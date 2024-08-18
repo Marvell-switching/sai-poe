@@ -136,11 +136,6 @@ failWriteFree:
     return EXTHWG_POE_ret_ok_CNS;
 }
 
-typedef struct HALP_config_poe_v3_msg_sysPowerConsumption_STC2 {
-    uint32_t                                  powerConsumption_swap;
-    uint32_t                                  powerAllocation_swap;
-}  HALP_config_poe_v3_msg_sysPowerConsumption_STC2;
-
 uint32_t RSG_swap(uint32_t val)
 {
 #pragma pack(push, 1)
