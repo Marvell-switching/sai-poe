@@ -24,6 +24,8 @@
 #ifndef __pdlib_pdlInith
 #define __pdlib_pdlInith
 
+/*
+********************************************************************************
  *
  * @brief Platform driver layer - Init library
  *

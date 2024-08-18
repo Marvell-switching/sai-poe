@@ -23,7 +23,7 @@
 #include <PDLIB/h/pdlib/init/pdlInit.h>
 #include <PDLIB/h/pdlib/lib/pdlLib.h>
 #include <h/utils/log.h>
-#include <h/sai/saipoe.h>
+#include <SAI/inc/sai.h>
 #include <h/ipc_drv.h>
 
 /* include global variables */
@@ -215,6 +215,7 @@ bool  boardInfoDbGetNext (
 }
 
 
+
 /**
  * @brief Get number of entries from the database
  * 
@@ -228,7 +229,7 @@ bool boardInfoDbNumOfEntriesGet (
     PRV_PDLIB_DB_TYP  dbHandler,
     /*!     INPUTS / OUTPUTS:   */
     /*!     OUTPUTS:            */
-    int32_t                *numOfEntriesPtr
+    uint32_t                *numOfEntriesPtr
 )
 {
     PDL_STATUS status;
@@ -244,6 +245,48 @@ bool boardInfoDbNumOfEntriesGet (
 }
 
 /**
+ * @brief Get number of total PSE devices per the specific board
+ * 
+ * @return number of PSEs
+ */
+uint32_t getNumOfDevices() {
+    // supports only one device as of now
+    return 1;
+}
+
+/**
+ * @brief Get number of total PSE devices per the specific board
+ * 
+ * @return number of PSEs
+ */
+uint32_t getNumOfPse() {
+    uint32_t numOfEntries = 0;
+
+    if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pselist.pseList_PTR, &numOfEntries)) {
+        LOG_ERROR("failed to get num of port entries");
+        return 0;
+    }
+
+    return numOfEntries;
+}
+
+/**
+ * @brief Get number of total PSE devices per the specific board
+ * 
+ * @return number of PSEs
+ */
+uint32_t getNumOfPorts() {
+    uint32_t numOfEntries = 0;
+
+    if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pseports.pseportList_PTR, &numOfEntries)) {
+        LOG_ERROR("failed to get num of port entries");
+        return 0;
+    }
+
+    return numOfEntries;
+}
+
+/**
  * @brief Initialize a database for each of the objects (device/pse/port)
  *
  * @return #POE_OP_OK_E if operation is successful otherwise a different
@@ -252,7 +295,7 @@ bool boardInfoDbNumOfEntriesGet (
 POE_OP_RESULT_ENT databaseInitialize() 
 {
     uint64_t key;
-    uint32_t numOfEntries = 1, index = 0;
+    uint32_t numOfEntries = 0, index = 0;
     PDL_PSE_LIST_PARAMS_STC *pseListPtr = NULL;
     PDL_PSEPORT_LIST_PARAMS_STC *pseportList_PTR = NULL;
     PDL_POEBANK_LIST_PARAMS_STC *powerBanksListPtr = NULL;
@@ -260,11 +303,19 @@ POE_OP_RESULT_ENT databaseInitialize()
     POE_OP_RESULT_ENT result = POE_OP_OK_E;
     
     /* create dictionary for the poe device */
-    deviceDbPtr = create_dictionary(numOfEntries);
-    if(!deviceDbPtr) {
+    if((numOfEntries = getNumOfDevices()) < 1) {
         result = POE_OP_FAILED_E;
-        LOG_ERROR("failed to create poe device dictionary");
+        LOG_ERROR("failed to get num of entries");
         goto exit;
+    }
+    else {
+        deviceDbPtr = create_dictionary(numOfEntries);
+
+        if(!deviceDbPtr) {
+            result = POE_OP_FAILED_E;
+            LOG_ERROR("failed to create poe device dictionary");
+            goto exit;
+        }
     }
     
     /* set key value and update dictionary, there will be one poe device object */
@@ -285,18 +336,21 @@ POE_OP_RESULT_ENT databaseInitialize()
     }
 
     /* get the number of pse devices, and create the dictionary for the poe pse list */
-    if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pselist.pseList_PTR, &numOfEntries)) {
+    if((numOfEntries = getNumOfPse()) < 1) {
         result = POE_OP_FAILED_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
-
-    pseDbPtr = create_dictionary(numOfEntries);
-    if(!pseDbPtr) {
-        result = POE_OP_FAILED_E;
-        LOG_ERROR("failed to create poe pse dictionary");
-        goto exit;
+    else {
+        pseDbPtr = create_dictionary(numOfEntries);
+        if(!pseDbPtr) {
+            result = POE_OP_FAILED_E;
+            LOG_ERROR("failed to create poe pse dictionary");
+            goto exit;
+        }
     }
+
+    
 
     /* get hw data */
     getNext = boardInfoDbGetFirst(boardInfoDbPtr->data_PTR->poe.pselist.pseList_PTR, (void **)&pseListPtr);
@@ -324,18 +378,21 @@ POE_OP_RESULT_ENT databaseInitialize()
     }
 
     /* get the number of poe ports, and create the dictionary for the poe port list */
-    if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pseports.pseportList_PTR, &numOfEntries)) {
+    if((numOfEntries = getNumOfPorts()) < 1) {
         result = POE_OP_FAILED_E;
         LOG_ERROR("failed to get num of entries");
         goto exit;
     }
-
-    portDbPtr = create_dictionary(numOfEntries);
-    if(!portDbPtr) {
-        result = POE_OP_FAILED_E;
-        LOG_ERROR("failed to create poe port dictionary");
-        goto exit;
+    else {
+        portDbPtr = create_dictionary(numOfEntries);
+        if(!portDbPtr) {
+            result = POE_OP_FAILED_E;
+            LOG_ERROR("failed to create poe port dictionary");
+            goto exit;
+        }
     }
+
+    
 
     if(!boardInfoDbNumOfEntriesGet(boardInfoDbPtr->data_PTR->poe.pselist.pseList_PTR, &numOfEntries)) {
         result = POE_OP_FAILED_E;
@@ -415,8 +472,6 @@ static POE_OP_RESULT_ENT poeInitFw ()
     EXTHWG_POE_ret_TYP                          driver_ret_val;
     int32_t                                     time_before, time_after;
 
-    printf("poeInitFw\n");
-
     if ((boardInfoDbPtr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_POE_NOT_SUPPORTED_E) || (boardInfoDbPtr->data_PTR->poe.poeHwTypeValue == PDL_POE_HARDWARE_TYPE_LAST_E)){
         return POE_OP_FAILED_E;
     }
@@ -426,11 +481,6 @@ static POE_OP_RESULT_ENT poeInitFw ()
         2. Take the MCU out from reset
         3. Init and config IPc for transport of messages between host and MCU ***/
     /* get the dragonite dev id (which is the local PP dev id) */ 
-
-
-    dev_num = 0; /* to do ? */
-
-    printf("poeInitFw type \n");
 
     if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
         switch (boardInfoDbPtr->data_PTR->poe.mcuType){
@@ -443,9 +493,7 @@ static POE_OP_RESULT_ENT poeInitFw ()
             break;
         }
 
-        printf("exthwgPoeIpcInit\n");
-        driver_ret_val = exthwgPoeIpcInit(exhw_mcuType, (GT_U8)dev_num);
-        printf("end exthwgPoeIpcInit\n");
+        driver_ret_val = exthwgPoeIpcInit(exhw_mcuType, boardInfoDbPtr->data_PTR->poe.fwFileName);
         
     }
     else if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
@@ -455,65 +503,12 @@ static POE_OP_RESULT_ENT poeInitFw ()
         return POE_OP_FAILED_E;
     }
     if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
-        printf("failed driver_ret_val\n");
         return POE_OP_FAILED_E;
     }
 
     exthwgPoeIpcRemoveFwFlagLoaded();
     
     return POE_OP_OK_E;
-}
-
-/**
- * @brief Download poe firmware
- * 
- * @return #POE_OP_OK_E if operation is successful otherwise a different
- *    error code is returned.
- */
-static POE_OP_RESULT_ENT poeDownloadFw()
-{
-
-    ExthwgPoeIpcMcuTypeEnt                      exhw_mcuType=ExthwgPoeIpcMcuTypeCm3;
-    EXTHWG_POE_ret_TYP                          driver_ret_val;
-    int32_t                                     time_before, time_after, num_of_retries = 0, max_num_of_retries = 10;
-    BOOLEAN                                     valid_firmware_exist = FALSE, version_ignore_flag = TRUE, expected_userbyte=FALSE;
-    BOOLEAN                                     latest_ver_exist = FALSE;
-
-    switch (boardInfoDbPtr->data_PTR->poe.mcuType) {
-        case PDL_POE_MCU_TYPE_CM3_E:
-            exhw_mcuType = ExthwgPoeIpcMcuTypeCm3;
-            break;
-        case PDL_POE_MCU_TYPE_DRAGONITE_E:
-        default:
-            exhw_mcuType = ExthwgPoeIpcMcuTypeDragonite;
-            break;
-    }
-
-    /* if we performed a valid perpetual restart then run firmware only if firmware is volatile */
-    if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E){
-        /* TODO: update hardcoded path */
-        driver_ret_val = exthwgPoeIpcRunFirmware(exhw_mcuType, "/usr/bin/cm3_sdk.bin");
-        printf("exthwgPoeIpcRunFirmware ret_val %d\n", driver_ret_val);
-    }
-    else if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){
-        // not supported
-        printf("not supported\n");
-    }
-    else {
-        return POE_OP_FAILED_E;
-        printf("failed\n");
-    }
-
-
-    if (driver_ret_val != EXTHWG_POE_ret_ok_CNS) {
-        printf("failed, driver return value %d\n", driver_ret_val);
-        return POE_OP_FAILED_E;
-    }
-
-    sleep(1);// poe_wait(poe_wait_692xx_DownloadFirmwareComplete_E);
-    
-    return POE_OP_OK_E;
-
 }
 
 /**
@@ -524,19 +519,9 @@ static POE_OP_RESULT_ENT poeDownloadFw()
  */
 POE_OP_RESULT_ENT sharedMemoryInitialize() {
     
-    printf("sharedMemoryInitialize\n");
-
     if (poeInitFw() != POE_OP_OK_E) {
-        printf("poeInitFw failed\n");
         return POE_OP_FAILED_E;
     }
-
-    if(poeDownloadFw() != POE_OP_OK_E) {
-        printf("poeDownloadFw failed\n");
-        return POE_OP_FAILED_E;
-    }
-
-    printf("end sharedMemoryInitialize\n");
 
     return POE_OP_OK_E;
 }
@@ -594,6 +579,24 @@ POE_OP_RESULT_ENT boardInfoInitialize() {
     return POE_OP_OK_E;
 }
 
+int test_power() {
+    int32_t index, powerConsumption;
+    bool getNext = true;
+
+    /* enable all ports */
+    poePortGetFirstIndex(&index);
+    while (getNext) {
+        poePortSetAdminEnable(index, 1);
+        getNext = poePortGetNextIndex(&index);
+    }
+
+    // while (true) {
+    //     sleep(10);
+    //     poeDevGetPowerConsumption(1, &powerConsumption);
+    //     printf("power consumption %d \n", powerConsumption);
+    // }
+}
+
 /**
  * @brief General initialize for all the PoE components
  *
@@ -604,7 +607,6 @@ POE_OP_RESULT_ENT poeInitialize(void) {
     
     POE_OP_RESULT_ENT result = POE_OP_OK_E;
     LOG_PRINT("start PoE initalization");
-    printf("\n sai_api_initialize poeInitialize \n");
 
     /* init semaphore */
     rwlock_excl_init(&poe_v3_lock);
@@ -663,6 +665,9 @@ POE_OP_RESULT_ENT poeInitialize(void) {
         LOG_ERROR("failed to initialize port standard");
         goto exit;
     }
+    
+    /* temporary - remove after checks */
+    test_power();
 
     LOG_PRINT("successful port standard initalization");
 
@@ -783,7 +788,7 @@ POE_OP_RESULT_ENT poePortMatrixInitialize() {
     /* clean matrix params */
     memset(&setMatrixParams, 0xff, sizeof(POE_V3_MSG_SYS_PORT_MATRIX_STC));
     
-    /* for every front panel (logical) poe port in the device, set the correct physical port */
+    /* for every front panel (logical) poe port in the device, set the correct physical port(s) */
     if(!poePortGetFirstIndex(&frontPanelIndex)) {
         LOG_ERROR("failed to get first index");
         return POE_OP_FAILED_E;
@@ -805,19 +810,16 @@ POE_OP_RESULT_ENT poePortMatrixInitialize() {
 
         setMatrixParams.physicLogicalPair[index].logicalPort = (uint8_t)frontPanelIndex;
         setMatrixParams.physicLogicalPair[index++].physPort = (uint8_t)physicalNumberA;
-                
-        /* if the port supports two channels, set the second physical port */
+      
+        /* check if the port needs 2 channels, if yes, set the second physical port */
         if ((poePortHwType == POE_PORT_HW_TYPE_60W_E) ||
             (poePortHwType == POE_PORT_HW_TYPE_BT3_E) ||
             (poePortHwType == POE_PORT_HW_TYPE_BT4_E)) {
             
-            if(!poePortGetSecondPhysicalIndex(frontPanelIndex, &physicalNumberB)) {
-                LOG_ERROR("failed to get second index");
-                return POE_OP_FAILED_E;
+            if(poePortGetSecondPhysicalIndex(frontPanelIndex, &physicalNumberB)) {
+                setMatrixParams.physicLogicalPair[index].logicalPort = (uint8_t)frontPanelIndex;
+                setMatrixParams.physicLogicalPair[index++].physPort = (uint8_t)physicalNumberB;
             }
-
-            setMatrixParams.physicLogicalPair[index].logicalPort = (uint8_t)frontPanelIndex;
-            setMatrixParams.physicLogicalPair[index++].physPort = (uint8_t)physicalNumberB;
         }
 
         getNext = poePortGetNextIndex(&frontPanelIndex);
@@ -856,23 +858,19 @@ POE_OP_RESULT_ENT poeV3SendReceiveMsg (
     uint16_t                                 msgId,
     uint8_t                                  dataLen,
     /*!     INPUTS / OUTPUTS:   */
-    void*                                   dataPtr
+    uint8_t*                                  dataPtr
     /*!     OUTPUTS:            */
 )
 {
     uint8_t  *buf_ptr;
-    bool send=(direction==POE_V3_MSG_DIR_GET_CNS)?false:true;
     POE_V3_MSG_OP_CODE_STC op_code;
 
     poeV3SetMsgOpCodeMac(op_code, msgLevel, direction, msgId);
     buf_ptr = (uint8_t*)dataPtr;
-    if (true != exthwgPoeIpcSendReceiveMsg(send, op_code.opCodeNum32, dataLen, buf_ptr)) {
+    if (true != exthwgPoeIpcSendReceiveMsg(op_code.opCodeNum32, dataLen, dataPtr)) {
         LOG_ERROR("failed to send/recieve poe message, msg id %d, direction %d, op code: %d, level %d", msgId, direction, op_code.opCodeNum32, msgLevel);
         return POE_OP_FAILED_E;
     }
-
-    /* TEMP - return 11 for all data  */
-    memset(dataPtr, 11, sizeof(uint8_t));
 
     return POE_OP_OK_E;
 } 
@@ -926,7 +924,7 @@ POE_OP_RESULT_ENT poePowerBankInitialize() {
     POE_V3_MSG_SYS_POWER_BANK_STC powerBankParams;
 
     for (index = 0; index < POE_MAX_NUM_OF_POWER_BANKS_CNS ; index++) {
-        powerBankParams.powerBankWSwap[index] = swap16(powerBankList.powerBankWSwap[index]); 
+        powerBankParams.powerBankWSwap[index] = swap16(powerBankList.powerBankWSwap[index]);
     }
     
     return poeV3SendReceiveMsg(
@@ -996,7 +994,6 @@ POE_OP_RESULT_ENT poeDevGetPowerConsumption (
     
     memset(&powerConsumptionParams, 0, sizeof(powerConsumptionParams));
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_POWER_CONSUMPTION_CNS, sizeof(powerConsumptionParams), (UINT_8*)&powerConsumptionParams);
-
     if(result == POE_OP_OK_E) {
         *powerConsumptionMwPtr = (swap32(powerConsumptionParams.powerConsumptionSwap)) + 0.5;
     }
@@ -1683,7 +1680,7 @@ POE_OP_RESULT_ENT poePortGetStatus (
  * 
  */
 uint16_t swap16(uint16_t value) {
-    return (value << 8) | (value >> 8);
+    return ((value & 0xFF) << 8) | ((value & 0xFF00) >> 8);
 }
 
 /**
@@ -1695,8 +1692,19 @@ uint16_t swap16(uint16_t value) {
  * 
  */
 uint32_t swap32(uint32_t value) {
-    return ((value & 0xFF000000) >> 24) |     // Move byte 3 to byte 0
-           ((value & 0x00FF0000) >> 8)  |     // Move byte 2 to byte 1
-           ((value & 0x0000FF00) << 8)  |     // Move byte 1 to byte 2
-           ((value & 0x000000FF) << 24);      // Move byte 0 to byte 3
+#pragma pack(push, 1)
+    union U_TYP {
+        UINT_32 Word;
+        UINT_8  Bytes[4];
+    } v1, v2;
+#pragma pack(pop)
+
+    v1.Word = value;
+
+    v2.Bytes[0] = v1.Bytes[3];
+    v2.Bytes[1] = v1.Bytes[2];
+    v2.Bytes[2] = v1.Bytes[1];
+    v2.Bytes[3] = v1.Bytes[0];
+
+    return v2.Word;
 }

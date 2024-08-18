@@ -100,11 +100,6 @@ typedef enum {
     EXTHWG_POE_ret_timeout_E   = EXTHWG_POE_ret_timeout_CNS,
     EXTHWG_POE_ret_last_E,
 } EXTHWG_POE_ret_ENT;
-/********************************************************************************
-*        These variables can be customized by the user
-*********************************************************************************/
-extern uint32_t EXTDRVIPC_WAIT_FOR_RESPONSE_TIMEOUT_uSec;
-extern uint32_t EXTDRVIPC_WAIT_FOR_RESPONSE_NUM_OF_RETRIES;
 
 /**
 * @internal extDrvIpcPoeMsgRead function

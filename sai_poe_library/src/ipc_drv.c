@@ -61,94 +61,99 @@ extern uint32_t exthwgPoeIpcReinit (
  * @brief Initialize the EXTHWG POE IPC module.
  * 
  * @param[in] mcuType The type of MCU for the initialization.
- * @param[in] devNum The device number.
  * 
  * @return EXTHWG_POE_ret_TYP Returns the initialization status.
  */
 extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
-    ExthwgPoeIpcMcuTypeEnt mcuType,
-    uint8_t devNum
-)
+    ExthwgPoeIpcMcuTypeEnt mcuType, char* filepath)
 {
     uint32_t rc, core = 2;
+    EXTHWG_POE_ret_TYP ret = EXTHWG_POE_ret_ok_CNS;
+    char *buffer = NULL , fw_file_name[100]={0} ;
+    FILE *firmwareFile;
 
-    if (mcuType == ExthwgPoeIpcMcuTypeDragonite) {
-        // not supported
-    }
-    else if (mcuType == ExthwgPoeIpcMcuTypeCm3) { /* CM3 */
-        printf("exthwgPoeIpcInit: devNum=%d, core=%d\n", devNum, core);
-        rc = extDrvIpcCm3Init(devNum, core); /* core 2 */
-        if (rc != 0){
-            printf("failed\n");
+	if (!exthwpPoeIpcFwLoaded){
+		/* make the path NULL-terminated */
+		fw_file_name[sizeof(fw_file_name)-1] = '\0';
+        
+        firmwareFile = fopen(filepath, "rb");
+        if (!firmwareFile) {
+            perror("Error opening firmware file");
             return EXTHWG_POE_ret_failed_CNS;
         }
-        else {
-            printf("returned ok\n");
+
+        /* Get the size of the firmware file */
+        fseek(firmwareFile, 0, SEEK_END);
+        unsigned firmwareSize = ftell(firmwareFile);
+        fseek(firmwareFile, 0, SEEK_SET);
+
+        /* Allocate buffer to hold the firmware */
+        buffer = (char*)malloc(firmwareSize);
+        if (!buffer) {
+            perror("Error allocating memory");
+            fclose(firmwareFile);
+            return EXTHWG_POE_ret_failed_CNS;
         }
-    }
-    else {
-        printf("invalid mcu type\n");
-        return EXTHWG_POE_ret_failed_CNS;
+
+        /* Read the firmware file into the buffer */
+        size_t bytesRead = fread(buffer, 1, firmwareSize, firmwareFile);
+        if (bytesRead != firmwareSize) {
+            perror("Error reading firmware file");
+            free(buffer);
+            fclose(firmwareFile);
+            return EXTHWG_POE_ret_failed_CNS;
+        }
+
+        if (mcuType == ExthwgPoeIpcMcuTypeDragonite) {
+            // not supported
+            return EXTHWG_POE_ret_failed_CNS;
+        }
+        else if (mcuType == ExthwgPoeIpcMcuTypeCm3) { /* CM3 */
+            /* initialize shared memory and load firmware */
+            rc = ipc_poe_init(core, buffer, firmwareSize);
+            
+            if (rc != 0){
+                return EXTHWG_POE_ret_failed_CNS;
+            }
+
+        }
+        else {
+            return EXTHWG_POE_ret_failed_CNS;
+        }
     }
 
     /* save mcu type */
     exthwgPoeIpcMcuType = mcuType;
 
+    /* fall through in case ok */
+failWriteFree:
+    /* Close the firmware file */
+    fclose(firmwareFile);
+
+	if (buffer)
+		free(buffer);
+
     return EXTHWG_POE_ret_ok_CNS;
 }
 
-/**
- * @brief Read from the EXTHWG POE IPC module.
- * 
- * @param[in] opcode The operation code.
- * @param[in] readRequestDataLen The length of the read request data.
- * @param[in] readRequestDataPtr Pointer to the read request data buffer.
- * @param[out] readResponseDataLenPtr Pointer to store the length of the read response data.
- * @param[out] readResponseDataPtr Pointer to store the read response data.
- * 
- * @return EXTHWG_POE_ret_TYP Returns the read status.
- */
-static EXTHWG_POE_ret_TYP exthwpPoeIpcRead(
-    uint32_t opcode,
-    uint32_t readRequestDataLen,
-    uint8_t *readRequestDataPtr,
-    uint32_t *readResponseDataLenPtr,
-    uint8_t *readResponseDataPtr
-)
+uint32_t RSG_swap(uint32_t val)
 {
-    uint32_t timeBefore = 0, timeAfter = 0, debugIndex;
-    uint32_t ret; 
+#pragma pack(push, 1)
+    union U_TYP {
+        uint32_t Word;
+        uint8_t  Bytes[4];
+    } v1, v2;
+#pragma pack(pop)
 
-    ret = extDrvIpcPoeMsgRead(opcode, readRequestDataLen, readRequestDataPtr, readResponseDataLenPtr, readResponseDataPtr);
+    v1.Word = val;
 
-    return (ret==0)?EXTHWG_POE_ret_ok_CNS:EXTHWG_POE_ret_failed_CNS;
+    v2.Bytes[0] = v1.Bytes[3];
+    v2.Bytes[1] = v1.Bytes[2];
+    v2.Bytes[2] = v1.Bytes[1];
+    v2.Bytes[3] = v1.Bytes[0];
+
+    return v2.Word;
 }
-/* END OF EXTHWG_POE_IPc_read */
-
-/**
- * @brief Write to the EXTHWG POE IPC module.
- * 
- * @param[in] opcode The operation code.
- * @param[in] writeRequestDataLen The length of the write request data.
- * @param[in] writeRequestDataPtr Pointer to the write request data buffer.
- * @param[in] isDebug Flag indicating if debug mode is enabled.
- * 
- * @return EXTHWG_POE_ret_TYP Returns the write status.
- */
-static EXTHWG_POE_ret_TYP exthwpPoeIpcWrite(
-    uint32_t opcode,
-    uint32_t writeRequestDataLen,
-    uint8_t *writeRequestDataPtr,
-    bool isDebug
-)
-{
-    if (extDrvIpcPoeMsgWrite(opcode, writeRequestDataLen, writeRequestDataPtr, isDebug) == 0)
-        return EXTHWG_POE_ret_ok_CNS;
-    else
-        return EXTHWG_POE_ret_failed_CNS;
-}
-/* END OF EXTHWG_POE_IPc_write */
-
 
 /**
  * @brief Send and receive message from the EXTHWG POE IPC module.
@@ -161,30 +166,17 @@ static EXTHWG_POE_ret_TYP exthwpPoeIpcWrite(
  * @return bool Returns true if the operation is successful, otherwise false.
  */
 bool exthwgPoeIpcSendReceiveMsg(
-    bool send,
     uint32_t opCode32,
     uint8_t dataLen,
     uint8_t *dataPtr
 )
 { 
     int32_t returnCode;
-    uint8_t debugBuf[256], readBuf[256];
-    uint32_t responseLen, i;
-    uint8_t *debugKeepPtr = NULL;
-    bool isPrintable=true;
-    uint32_t origRetries=EXTDRVIPC_WAIT_FOR_RESPONSE_NUM_OF_RETRIES;
+    uint32_t responseLen;
 
-    if (send==true) {
-        return false;
-        returnCode = exthwpPoeIpcWrite(opCode32, dataLen, dataPtr, false);
-    }
-    else {
-        returnCode = exthwpPoeIpcRead(opCode32, dataLen, dataPtr, &responseLen, readBuf);
-        if (responseLen != dataLen){
-            LOG_ERROR("PoE FW response length is different than the request length\n");
-        }
-
-        memcpy(dataPtr, readBuf, (responseLen < dataLen ? responseLen : dataLen));
+    returnCode = ipc_poe_send_receive_message(opCode32, dataLen, dataPtr, &responseLen);
+    if (responseLen != dataLen) {
+        LOG_ERROR("PoE FW response length is different than the request length\n");
     }
 
     if (returnCode != 0) {
