@@ -1142,10 +1142,10 @@ sai_status_t sai_query_api_version(
 
     *version = SAI_API_VERSION;
     
-    /*printf("\nMRVL POE using SAI-%u.%u.%u \n",
+    printf("\nMRVL POE using SAI-%u.%u.%u \n",
             (SAI_API_VERSION/10000),
             ((SAI_API_VERSION%10000)/100),
-            (SAI_API_VERSION%10000)%100);*/
+            (SAI_API_VERSION%10000)%100);
         
     return SAI_STATUS_SUCCESS;
 }

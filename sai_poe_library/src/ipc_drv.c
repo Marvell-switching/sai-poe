@@ -141,35 +141,14 @@ typedef struct HALP_config_poe_v3_msg_sysPowerConsumption_STC2 {
     uint32_t                                  powerAllocation_swap;
 }  HALP_config_poe_v3_msg_sysPowerConsumption_STC2;
 
-uint32_t  RSG_swap (
-
-    /*!     INPUTS:             */
-
-    uint32_t     val
-
-    /*!     INPUTS / OUTPUTS:   */
-
-
-    /*!     OUTPUTS:            */
-
-
-)
+uint32_t RSG_swap(uint32_t val)
 {
-/*!*************************************************************************/
-/*! L O C A L   D E C L A R A T I O N S   A N D   I N I T I A L I Z A T I O N */
-/*!*************************************************************************/
-
 #pragma pack(push, 1)
     union U_TYP {
         uint32_t Word;
         uint8_t  Bytes[4];
     } v1, v2;
 #pragma pack(pop)
-
-/*!*************************************************************************/
-/*!                      F U N C T I O N   L O G I C                          */
-/*!*************************************************************************/
-
 
     v1.Word = val;
 
