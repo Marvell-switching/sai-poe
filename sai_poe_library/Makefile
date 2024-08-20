@@ -1,5 +1,6 @@
 # Specify the compiler
-CC ?= /swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-gcc
+CROSS_COMPILE?=/swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-
+CC = $(CROSS_COMPILE)gcc
 
 # Compiler flags
 CFLAGS = -g -O0 -I. -I./PDLIB -I./h -I./PDLIB/h/ -I./SAI -I./SAI/inc -I./SAI/experimental -I./SAI/meta -fPIC
@@ -17,7 +18,7 @@ SRCS := $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '$(EXCLUDE_DIR)/*
 OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 # List of libraries
-PATHS ?= /local/store/sai-poe/sai-poe/usr/lib/libapp_scpu.a
+PATHS ?= ../sai-poe/usr/lib/libapp_scpu.a
 
 # Linker flags
 LDFLAGS := -shared -lpthread $(PATHS)

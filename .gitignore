@@ -1,0 +1,3 @@
+sai-poe.code-workspace
+sai_poe_library/build/*
+sai_poe_library/libsai.so

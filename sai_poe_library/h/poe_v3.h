@@ -821,7 +821,7 @@ POE_OP_RESULT_ENT poePseGetSoftwareVersion(int32_t poePseNum, char *versionPtr);
 POE_OP_RESULT_ENT poePseGetHardwareVersion(int32_t poePseNum, char *versionPtr);
 POE_OP_RESULT_ENT poePseGetTemperature(int32_t poePseNum, int16_t *temperaturePtr);
 POE_OP_RESULT_ENT poePseGetStatus(int32_t poePseNum, int16_t *statusPtr);
-POE_OP_RESULT_ENT poePortGetPortStandard(uint32_t frontPanelIndex, bool *portStandardPtr);
+POE_OP_RESULT_ENT poePortGetPortStandard(uint32_t frontPanelIndex, uint32_t *portStandardPtr);
 POE_OP_RESULT_ENT poePortSetAdminEnable(uint32_t frontPanelIndex, const bool enable);
 POE_OP_RESULT_ENT poePortGetAdminEnable(uint32_t frontPanelIndex, bool *enablePtr);
 POE_OP_RESULT_ENT poePortSetPowerLimit(uint32_t frontPanelIndex, const uint32_t powerLimit);
@@ -833,6 +833,7 @@ uint16_t swap16(uint16_t value);
 uint32_t swap32(uint32_t value);
 uint32_t getNumOfPse();
 uint32_t getNumOfPorts();
+uint32_t getNumOfDevices();
 
 #pragma pack(pop)
 

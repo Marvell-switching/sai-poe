@@ -25,6 +25,7 @@
 #include <h/utils/log.h>
 #include <SAI/inc/sai.h>
 #include <h/ipc_drv.h>
+#include <libgen.h>
 
 /* include global variables */
 /* board info from external file */
@@ -103,7 +104,7 @@ static BOOLEAN pdLibXmlUncompressCallback(
  */
 static BOOLEAN pdLibGetXmlSignatureCallback(
     IN  char       *xmlFileNamePtr,
-    IN  int32_t     signatureSize,
+    IN  uint32_t     signatureSize,
     OUT UINT_8     *signaturePtr
 )
 {
@@ -525,6 +526,10 @@ POE_OP_RESULT_ENT sharedMemoryInitialize() {
 
     return POE_OP_OK_E;
 }
+
+extern PDL_STATUS prvPdlCodeParser (XML_PARSER_NODE_DESCRIPTOR_TYP xml_root);
+extern PDL_STATUS prvPdlFeaturesDataHandler (void);
+extern PDL_STATUS prvPdlFeaturesDataGet (PDL_FEATURE_DATA_STC ** data_PTR);
 
 /**
  * @brief Initialize board info, to receive board specific parameters
@@ -1096,7 +1101,7 @@ POE_OP_RESULT_ENT poeDevGetPowerLimitMode (
  * @brief Get power limit mode (class/port limit)
  * 
  * @param[in] poeDevNum device number
- * @param[out] powerLimitPtr power limit
+ * @param[in] powerLimit power limit
  * 
  * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
@@ -1104,21 +1109,21 @@ POE_OP_RESULT_ENT poeDevGetPowerLimitMode (
 POE_OP_RESULT_ENT poeDevSetPowerLimitMode (
     /*!     INPUTS:             */
     uint32_t poeDevNum, 
-    uint32_t powerLimitPtr
+    uint32_t powerLimit
 )
 {
     POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC limitModeParams;
     POE_OP_RESULT_ENT result; 
 
-    if(powerLimitPtr == NULL) {
-        LOG_ERROR("invalid pointer");
+    if(powerLimit!= POWER_LIMIT_MODE_PORT_CNS && powerLimit!= POWER_LIMIT_MODE_CLASS_CNS) {
+        LOG_ERROR("invalid power limit mode %d", powerLimit);
         return POE_OP_FAILED_E;
     }
 
     rwlock_excl_acquire(&poe_v3_lock); 
 
     memset(&limitModeParams, 0, sizeof(POE_V3_MSG_SYS_POWER_LIMIT_MODE_STC));
-    limitModeParams.limitMode = (POWER_LIMIT_MODE)powerLimitPtr;
+    limitModeParams.limitMode = (POWER_LIMIT_MODE)powerLimit;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_SET_CNS, POE_V3_SYS_MSG_POWER_LIMIT_MODE_CNS, sizeof(limitModeParams), (uint8_t*)&limitModeParams);
 
@@ -1331,7 +1336,7 @@ POE_OP_RESULT_ENT poePseGetStatus (
  */
 POE_OP_RESULT_ENT poePortGetPortStandard (
     uint32_t frontPanelIndex,
-    bool *portStandardPtr
+    uint32_t *portStandardPtr
 )
 {
     POE_OP_RESULT_ENT result;
@@ -1590,7 +1595,7 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
     return result;
 }
 
-sai_poe_port_status_t portHwStatusToDetectionStatus(portStatus)
+sai_poe_port_status_t portHwStatusToDetectionStatus(uint32_t portStatus)
 {
     sai_poe_port_status_t detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;
 
