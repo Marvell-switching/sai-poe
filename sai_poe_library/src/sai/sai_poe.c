@@ -223,7 +223,7 @@ sai_status_t poe_device_initialize()
         goto exit;
     }
 
-    poe_object_port_mapping_ptr = create_dictionary(getNumOfPorts);
+    poe_object_port_mapping_ptr = create_dictionary(num_of_entries);
     if(!poe_object_port_mapping_ptr) {
         LOG_ERROR("failed to create dictionary");
         status = SAI_STATUS_FAILURE;
@@ -381,7 +381,7 @@ static sai_status_t get_poe_device_attribute(
             result = poeDevGetPowerConsumption(*internal_device_id_ptr, &(attr_list[i].value.u32));
             break;
         case SAI_POE_DEVICE_ATTR_VERSION:
-            result = poeDevGetVersion(*internal_device_id_ptr, &(attr_list[i].value.chardata));
+            result = poeDevGetVersion(*internal_device_id_ptr, (attr_list[i].value.chardata));
             break;
         case SAI_POE_DEVICE_ATTR_POWER_LIMIT_MODE:
             result = poeDevGetPowerLimitMode(*internal_device_id_ptr, &(attr_list[i].value.s32));
@@ -501,16 +501,16 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
         switch (attr_list[i].id)
         {
         case SAI_POE_PSE_ATTR_SOFTWARE_VERSION:
-            result = poePseGetSoftwareVersion(*internal_pse_id_ptr, &(attr_list[i].value.chardata));
+            result = poePseGetSoftwareVersion(*internal_pse_id_ptr, (attr_list[i].value.chardata));
             break;
         case SAI_POE_PSE_ATTR_HARDWARE_VERSION:
-            result = poePseGetHardwareVersion(*internal_pse_id_ptr, &(attr_list[i].value.chardata));
+            result = poePseGetHardwareVersion(*internal_pse_id_ptr, (attr_list[i].value.chardata));
             break;
         case SAI_POE_PSE_ATTR_TEMPERATURE:
             result = poePseGetTemperature(*internal_pse_id_ptr, &(attr_list[i].value.s16));
             break;
         case SAI_POE_PSE_ATTR_STATUS:
-            result = poePseGetStatus(*internal_pse_id_ptr, &(attr_list[i].value.s32));
+            result = poePseGetStatus(*internal_pse_id_ptr, &(attr_list[i].value.s16));
             break;
         default:
             LOG_ERROR("invalid attribute");
@@ -718,7 +718,7 @@ sai_status_t sai_api_query(
         _In_ sai_api_t api,
         _Out_ void **api_method_table) {
 
-    *api_method_table = &poe_api;
+    *(const sai_poe_api_t**) api_method_table = &poe_api;
 
     return SAI_STATUS_SUCCESS;
 }
@@ -857,12 +857,13 @@ sai_status_t sai_get_object_count(
         _In_ sai_object_id_t switch_id,
         _In_ sai_object_type_t object_type,
         _Out_ uint32_t *count) {
+    
+    KeyValuePair kv;
+    uint8_t i = 0;
+    rwlock_excl_acquire(&sai_poe_lock);
+    
     switch (object_type)
     {
-        KeyValuePair kv;
-        uint8_t i = 0;
-
-        rwlock_excl_acquire(&sai_poe_lock);
         case SAI_OBJECT_TYPE_POE_DEVICE:
             dict_get_first(poe_object_device_mapping_ptr, &kv);
             i++;
@@ -917,12 +918,12 @@ sai_status_t sai_get_object_key(
         _Inout_ uint32_t *object_count,
         _Inout_ sai_object_key_t *object_list) {
     
+    KeyValuePair kv;
+    uint8_t i = 0;
+    rwlock_excl_acquire(&sai_poe_lock);
+
     switch (object_type)
     {
-        KeyValuePair kv;
-        uint8_t i = 0;
-
-        rwlock_excl_acquire(&sai_poe_lock);
         case SAI_OBJECT_TYPE_POE_DEVICE:
             dict_get_first(poe_object_device_mapping_ptr, &kv);
             object_list[i].key.object_id = kv.key;
