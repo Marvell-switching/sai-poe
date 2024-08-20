@@ -3,7 +3,7 @@ CROSS_COMPILE?=/swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/
 CC = $(CROSS_COMPILE)gcc
 
 # Compiler flags
-CFLAGS = -g -O0 -I. -I./PDLIB -I./h -I./PDLIB/h/ -I./SAI -I./SAI/inc -I./SAI/experimental -I./SAI/meta -fPIC
+CFLAGS = -g -O0 -I. -I./PDLIB -I./h -I./PDLIB/h/ -I./SAI -I./SAI/inc -I./SAI/experimental -I./SAI/meta -IPDLIB/parser  -fPIC
 
 # Directory for object files
 OBJ_DIR := build

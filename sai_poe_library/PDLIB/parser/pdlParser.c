@@ -1,29 +1,17 @@
-/*
- *  Copyright (C) 2024, MARVELL. All rights reserved.
- *
- *    Licensed under the Apache License, Version 2.0 (the "License"); you may
- *    not use this file except in compliance with the License. You may obtain
- *    a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- *    THIS CODE IS PROVIDED ON AN  *AS IS* BASIS, WITHOUT WARRANTIES OR
- *    CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
- *    LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
- *    FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
- *
- *    See the Apache Version 2.0 License for specific language governing
- *    permissions and limitations under the License.
- *
- */
-
 /* ---------------------------------------------------------------------------------------------------------------
-   Generated from sai_poe_yang_module based on revision 2024-04-01:1.01, PoE support added. on 10/04/2024 11:59:36
+   Generated from sai_poe_yang_module based on revision 2024-04-01:1.01, PoE support added. on 20/08/2024 18:12:26
    --------------------------------------------------------------------------------------------------------------- */
-#include <pdlib/common/pdlTypes.h>
-#include <pdlib/lib/pdlLib.h>
-#include <pdlib/lib/private/prvPdlLib.h>
-#include <pdlib/xml/private/prvXmlParser.h>
-#include <pdlib/xml/private/prvXmlParserBuilder.h>
+#include "pdlib/lib/pdlLib.h"
+#include "pdlib/xml/private/prvXmlParser.h"
+#include "pdlib/xml/private/prvXmlParserBuilder.h"
+#include "pdlib/lib/private/prvPdlLib.h"
 #include "pdlParser.h"
+
+
+    #ifdef RETURN_WRAPPER_MAC
+    #undef RETURN_WRAPPER_MAC
+    #endif
+    #define RETURN_WRAPPER_MAC(_ret_code) return _ret_code
 
     /* common definitions */
     #ifndef MIN
@@ -100,7 +88,7 @@
         prvPdlFeaturesData[PDL_FEATURE_ID_POE_E].feature_id = PDL_FEATURE_ID_POE_E;
         prvPdlFeaturesData[PDL_FEATURE_ID_POE_E].is_supported = prvPdlSaiPlatform.poeFeatureIsSupported;
         prvPdlFeaturesData[PDL_FEATURE_ID_POE_E].data_PTR = (PDL_FEATURE_DATA_PARAMS_UNT*)&prvPdlSaiPlatform.poe;
-        prvPdlFeaturesData[PDL_FEATURE_ID_POE_E].data_size = sizeof(prvPdlSaiPlatform.poe);
+        prvPdlFeaturesData[PDL_FEATURE_ID_POE_E].dataSize = sizeof(prvPdlSaiPlatform.poe);
         prvPdlFeaturesData[PDL_FEATURE_ID_POE_E].is_supported_mask = prvPdlSaiPlatform.poeFeatureIsSupported_mask;
 
         return PDL_OK;
@@ -116,15 +104,15 @@
         char string_value[PDL_XML_MAX_TAG_LEN + 1];
         
         /* define xml handles and statuses */
-        XML_PARSER_RET_CODE_TYP xml_api_status[9];
-        XML_PARSER_NODE_DESCRIPTOR_TYP xml_handle[9];
-        void * list_entry_handle_PTR[3] = {0};
-        void * list_entry_handle_PTR_PTR[3] = {0};
-        PRV_PDLIB_DB_TYP list_db_handle_PTR[3] = {0};
+        XML_PARSER_RET_CODE_TYP xml_api_status[7];
+        XML_PARSER_NODE_DESCRIPTOR_TYP xml_handle[7];
+        void * list_entry_handle_PTR[1] = {0};
+        void * list_entry_handle_PTR_PTR[1] = {0};
+        PRV_PDLIB_DB_TYP list_db_handle_PTR[1] = {0};
         PRV_PDLIB_DB_ATTRIBUTES_STC db_attr;
         PDL_STATUS sysconf_status;
-        UINT_32 list_size[3];
-        UINT_32 list_entry_count[3];
+        UINT_32 list_size[1];
+        UINT_32 list_entry_count[1];
         
         (void)list_entry_handle_PTR[0];
         (void)list_entry_handle_PTR_PTR[0];
@@ -141,13 +129,15 @@
         /* if start */
         if (xml_api_status[0] != XML_PARSER_RET_CODE_OK)
         {
-            return PDL_NOT_FOUND;
+            RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
         }
         /* if end */
         xml_handle[0] = xml_handle[1];
         
         /* actual parser code */
         (void)i;
+        (void)db_attr;
+        (void)swap_32(0);
         xml_api_status[0] = xmlParserFindChildByName(xml_handle[0], (char *)"SAI-Platform", &xml_handle[1]);
         /* HANDLE STRUCT */
         if (xml_api_status[0] == XML_PARSER_RET_CODE_OK)
@@ -213,7 +203,7 @@
                         /* if start */
                         if (i == PDL_POE_HARDWARE_TYPE_ENUM_STR2VALUE_CNS)
                         {
-                            return PDL_NOT_FOUND;
+                            RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
                         }
                         /* if end */
                         /* HANDLE ENUM */
@@ -253,7 +243,7 @@
                         /* if start */
                         if (i == PDL_POE_MCU_TYPE_ENUM_STR2VALUE_CNS)
                         {
-                            return PDL_NOT_FOUND;
+                            RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
                         }
                         /* if end */
                         /* HANDLE ENUM */
@@ -293,7 +283,7 @@
                         /* if start */
                         if (i == PDL_POE_COMMUNICATION_TYPE_ENUM_STR2VALUE_CNS)
                         {
-                            return PDL_NOT_FOUND;
+                            RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
                         }
                         /* if end */
                         /* HANDLE ENUM */
@@ -333,7 +323,7 @@
                         /* if start */
                         if (i == PDL_POE_HOST_SERIAL_CHANNEL_ID_ENUM_STR2VALUE_CNS)
                         {
-                            return PDL_NOT_FOUND;
+                            RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
                         }
                         /* if end */
                         /* HANDLE ENUM */
@@ -359,7 +349,7 @@
                         /* if start */
                         if (prvPdlSaiPlatform.poe.fwFileName == NULL)
                         {
-                            return PDL_OUT_OF_CPU_MEM;
+                            RETURN_WRAPPER_MAC(PDL_OUT_OF_CPU_MEM);
                         }
                         /* if end */
                         XML_PARSER_STRCPY_MAC(prvPdlSaiPlatform.poe.fwFileName, string_value);
@@ -384,7 +374,7 @@
                         /* if start */
                         if (prvPdlSaiPlatform.poe.pseFwFileName == NULL)
                         {
-                            return PDL_OUT_OF_CPU_MEM;
+                            RETURN_WRAPPER_MAC(PDL_OUT_OF_CPU_MEM);
                         }
                         /* if end */
                         XML_PARSER_STRCPY_MAC(prvPdlSaiPlatform.poe.pseFwFileName, string_value);
@@ -423,7 +413,7 @@
                         /* if start */
                         if (i == PDL_POE_VENDOR_TYPE_ENUM_STR2VALUE_CNS)
                         {
-                            return PDL_NOT_FOUND;
+                            RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
                         }
                         /* if end */
                         /* HANDLE ENUM */
@@ -446,14 +436,14 @@
                         /* if start */
                         if ((xml_api_status[3] != XML_PARSER_RET_CODE_OK) || (list_size[0] == 0))
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         list_entry_handle_PTR[0] = prvPdlibOsMalloc(sizeof(PDL_POEBANK_LIST_PARAMS_STC));
                         /* if start */
                         if (list_entry_handle_PTR[0] == NULL)
                         {
-                            return PDL_OUT_OF_CPU_MEM;
+                            RETURN_WRAPPER_MAC(PDL_OUT_OF_CPU_MEM);
                         }
                         /* if end */
                         db_attr.listAttributes.keySize = sizeof(PDL_POEBANK_LIST_KEYS_STC);
@@ -462,7 +452,7 @@
                         /* if start */
                         if (sysconf_status != PDL_OK)
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         prvPdlSaiPlatform.poe.poePowerBanks.poebankList_PTR = list_db_handle_PTR[0];
@@ -504,7 +494,7 @@
                                     /* if start */
                                     if (uint_value > PDL_BANK_NUMBER_TYPE_MAX_VALUE_CNS)
                                     {
-                                        return PDL_OUT_OF_RANGE;
+                                        RETURN_WRAPPER_MAC(PDL_OUT_OF_RANGE);
                                     }
                                     /* if end */
                                     /* HANDLE TYPE USING SIMPLE TYPE */
@@ -549,7 +539,7 @@
                             /* if start */
                             if (sysconf_status != PDL_OK)
                             {
-                                return PDL_ERROR;
+                                RETURN_WRAPPER_MAC(PDL_ERROR);
                             }
                             /* if end */
                             xml_api_status[3] = xmlParserGetNextSibling(xml_handle[4], & xml_handle[4]);
@@ -558,7 +548,7 @@
                         /* if start */
                         if (list_size[0] != list_entry_count[0])
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         prvPdlSaiPlatform.poe.poePowerBanks.poebankList_mask |= PDL_FIELD_HAS_VALUE_CNS;
@@ -578,14 +568,14 @@
                         /* if start */
                         if ((xml_api_status[3] != XML_PARSER_RET_CODE_OK) || (list_size[0] == 0))
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         list_entry_handle_PTR[0] = prvPdlibOsMalloc(sizeof(PDL_PSE_LIST_PARAMS_STC));
                         /* if start */
                         if (list_entry_handle_PTR[0] == NULL)
                         {
-                            return PDL_OUT_OF_CPU_MEM;
+                            RETURN_WRAPPER_MAC(PDL_OUT_OF_CPU_MEM);
                         }
                         /* if end */
                         db_attr.listAttributes.keySize = sizeof(PDL_PSE_LIST_KEYS_STC);
@@ -594,7 +584,7 @@
                         /* if start */
                         if (sysconf_status != PDL_OK)
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         prvPdlSaiPlatform.poe.pselist.pseList_PTR = list_db_handle_PTR[0];
@@ -636,7 +626,7 @@
                                     /* if start */
                                     if (uint_value > PDL_PSE_NUMBER_TYPE_MAX_VALUE_CNS)
                                     {
-                                        return PDL_OUT_OF_RANGE;
+                                        RETURN_WRAPPER_MAC(PDL_OUT_OF_RANGE);
                                     }
                                     /* if end */
                                     /* HANDLE TYPE USING SIMPLE TYPE */
@@ -671,7 +661,7 @@
                                     /* if start */
                                     if (uint_value > PDL_PSE_ADDRESS_TYPE_MAX_VALUE_CNS)
                                     {
-                                        return PDL_OUT_OF_RANGE;
+                                        RETURN_WRAPPER_MAC(PDL_OUT_OF_RANGE);
                                     }
                                     /* if end */
                                     /* HANDLE TYPE USING SIMPLE TYPE */
@@ -688,7 +678,7 @@
                             /* if start */
                             if (sysconf_status != PDL_OK)
                             {
-                                return PDL_ERROR;
+                                RETURN_WRAPPER_MAC(PDL_ERROR);
                             }
                             /* if end */
                             xml_api_status[3] = xmlParserGetNextSibling(xml_handle[4], & xml_handle[4]);
@@ -697,7 +687,7 @@
                         /* if start */
                         if (list_size[0] != list_entry_count[0])
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         prvPdlSaiPlatform.poe.pselist.pseList_mask |= PDL_FIELD_HAS_VALUE_CNS;
@@ -717,14 +707,14 @@
                         /* if start */
                         if ((xml_api_status[3] != XML_PARSER_RET_CODE_OK) || (list_size[0] == 0))
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         list_entry_handle_PTR[0] = prvPdlibOsMalloc(sizeof(PDL_PSEPORT_LIST_PARAMS_STC));
                         /* if start */
                         if (list_entry_handle_PTR[0] == NULL)
                         {
-                            return PDL_OUT_OF_CPU_MEM;
+                            RETURN_WRAPPER_MAC(PDL_OUT_OF_CPU_MEM);
                         }
                         /* if end */
                         db_attr.listAttributes.keySize = sizeof(PDL_PSEPORT_LIST_KEYS_STC);
@@ -733,7 +723,7 @@
                         /* if start */
                         if (sysconf_status != PDL_OK)
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         prvPdlSaiPlatform.poe.pseports.pseportList_PTR = list_db_handle_PTR[0];
@@ -775,7 +765,7 @@
                                     /* if start */
                                     if (uint_value > PDL_PSEINDEX_TYPE_MAX_VALUE_CNS)
                                     {
-                                        return PDL_OUT_OF_RANGE;
+                                        RETURN_WRAPPER_MAC(PDL_OUT_OF_RANGE);
                                     }
                                     /* if end */
                                     /* HANDLE TYPE USING SIMPLE TYPE */
@@ -815,7 +805,7 @@
                                     /* if start */
                                     if (i == PDL_PSEPORT_TYPE_ENUM_STR2VALUE_CNS)
                                     {
-                                        return PDL_NOT_FOUND;
+                                        RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
                                     }
                                     /* if end */
                                     /* HANDLE ENUM */
@@ -850,7 +840,7 @@
                                     /* if start */
                                     if (uint_value > PDL_PSEINDEX_TYPE_MAX_VALUE_CNS)
                                     {
-                                        return PDL_OUT_OF_RANGE;
+                                        RETURN_WRAPPER_MAC(PDL_OUT_OF_RANGE);
                                     }
                                     /* if end */
                                     /* HANDLE TYPE USING SIMPLE TYPE */
@@ -886,7 +876,7 @@
                                     /* if start */
                                     if (uint_value > PDL_PSEINDEX_TYPE_MAX_VALUE_CNS)
                                     {
-                                        return PDL_OUT_OF_RANGE;
+                                        RETURN_WRAPPER_MAC(PDL_OUT_OF_RANGE);
                                     }
                                     /* if end */
                                     /* HANDLE TYPE USING SIMPLE TYPE */
@@ -903,7 +893,7 @@
                             /* if start */
                             if (sysconf_status != PDL_OK)
                             {
-                                return PDL_ERROR;
+                                RETURN_WRAPPER_MAC(PDL_ERROR);
                             }
                             /* if end */
                             xml_api_status[3] = xmlParserGetNextSibling(xml_handle[4], & xml_handle[4]);
@@ -912,7 +902,7 @@
                         /* if start */
                         if (list_size[0] != list_entry_count[0])
                         {
-                            return PDL_ERROR;
+                            RETURN_WRAPPER_MAC(PDL_ERROR);
                         }
                         /* if end */
                         prvPdlSaiPlatform.poe.pseports.pseportList_mask |= PDL_FIELD_HAS_VALUE_CNS;
@@ -929,19 +919,14 @@
     {
         /* define generic/temp variables */
         
-        void * list_entry_handle_PTR_PTR[3] = {0};
-        void * list_entry_next_handle_PTR_PTR[3] = {0};
-        PDL_STATUS sysconf_status[3] = { PDL_OK };
         
         /* actual destroy code */
-        (void)list_entry_handle_PTR_PTR[0];
-        (void)list_entry_next_handle_PTR_PTR[0];
-        (void)sysconf_status[0];
         /* DESTROY SIMPLE STRING TYPE */
         /* if start */
         if (prvPdlSaiPlatform.poe.fwFileName_mask & PDL_FIELD_HAS_VALUE_CNS)
         {
             prvPdlibOsFree(prvPdlSaiPlatform.poe.fwFileName);
+            prvPdlSaiPlatform.poe.fwFileName = NULL;
         }
         /* if end */
         prvPdlSaiPlatform.poe.fwFileName_mask &= ~(UINT_8)PDL_FIELD_HAS_VALUE_CNS;
@@ -950,6 +935,7 @@
         if (prvPdlSaiPlatform.poe.pseFwFileName_mask & PDL_FIELD_HAS_VALUE_CNS)
         {
             prvPdlibOsFree(prvPdlSaiPlatform.poe.pseFwFileName);
+            prvPdlSaiPlatform.poe.pseFwFileName = NULL;
         }
         /* if end */
         prvPdlSaiPlatform.poe.pseFwFileName_mask &= ~(UINT_8)PDL_FIELD_HAS_VALUE_CNS;
@@ -957,20 +943,26 @@
         if (prvPdlSaiPlatform.poe.poePowerBanks.poebankList_PTR != NULL)
         {
             prvPdlibDbDestroy(prvPdlSaiPlatform.poe.poePowerBanks.poebankList_PTR);
+            prvPdlSaiPlatform.poe.poePowerBanks.poebankList_PTR = NULL;
         }
         /* if end */
+        prvPdlSaiPlatform.poe.poePowerBanks.poebankList_mask &= ~(UINT_8)PDL_FIELD_HAS_VALUE_CNS;
         /* if start */
         if (prvPdlSaiPlatform.poe.pselist.pseList_PTR != NULL)
         {
             prvPdlibDbDestroy(prvPdlSaiPlatform.poe.pselist.pseList_PTR);
+            prvPdlSaiPlatform.poe.pselist.pseList_PTR = NULL;
         }
         /* if end */
+        prvPdlSaiPlatform.poe.pselist.pseList_mask &= ~(UINT_8)PDL_FIELD_HAS_VALUE_CNS;
         /* if start */
         if (prvPdlSaiPlatform.poe.pseports.pseportList_PTR != NULL)
         {
             prvPdlibDbDestroy(prvPdlSaiPlatform.poe.pseports.pseportList_PTR);
+            prvPdlSaiPlatform.poe.pseports.pseportList_PTR = NULL;
         }
         /* if end */
+        prvPdlSaiPlatform.poe.pseports.pseportList_mask &= ~(UINT_8)PDL_FIELD_HAS_VALUE_CNS;
         return PDL_OK;
     }
     /* Feature data Array get */
@@ -980,7 +972,7 @@
         /* if start */
         if (data_PTR == NULL)
         {
-            return PDL_ERROR;
+            RETURN_WRAPPER_MAC(PDL_ERROR);
         }
         /* if end */
 
@@ -992,7 +984,7 @@
         /* if start */
         if (data_PTR == NULL)
         {
-            return PDL_ERROR;
+            RETURN_WRAPPER_MAC(PDL_ERROR);
         }
         /* if end */
 
@@ -1009,7 +1001,7 @@
         UINT_32 i,j;
         for (i = 0; i < sizeof(pdlEnumIdsEnumStr2Value)/sizeof(pdlEnumIdsEnumStr2Value[0]); i ++)
         {
-            if (pdlEnumIdsEnumStr2Value[i].enum_id == enum_type)
+            if (pdlEnumIdsEnumStr2Value[i].enumId == enum_type)
             {
                 for (j = 0; j < pdlEnumIdsEnumStr2Value[i].arr_size; j ++)
                 {
@@ -1019,10 +1011,10 @@
                         return PDL_OK;
                     }
                 }
-                return PDL_NOT_FOUND;
+                RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
             }
         }
-        return PDL_NOT_FOUND;
+        RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
     }
     extern PDL_STATUS pdlStr2EnumConvert( 
         PDL_ENUM_IDS_ENT enum_type,
@@ -1033,7 +1025,7 @@
         UINT_32 i,j;
         for (i = 0; i < sizeof(pdlEnumIdsEnumStr2Value)/sizeof(pdlEnumIdsEnumStr2Value[0]); i ++)
         {
-            if (pdlEnumIdsEnumStr2Value[i].enum_id == enum_type)
+            if (pdlEnumIdsEnumStr2Value[i].enumId == enum_type)
             {
                 for (j = 0; j < pdlEnumIdsEnumStr2Value[i].arr_size; j ++)
                 {
@@ -1043,10 +1035,10 @@
                         return PDL_OK;
                     }
                 }
-                return PDL_NOT_FOUND;
+                RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
             }
         }
-        return PDL_NOT_FOUND;
+        RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
     }
     extern PDL_STATUS pdlEnum2StrEntryGet( 
         PDL_ENUM_IDS_ENT enum_type,
@@ -1057,7 +1049,7 @@
         UINT_32 i,j;
         for (i = 0; i < sizeof(pdlEnumIdsEnumStr2Value)/sizeof(pdlEnumIdsEnumStr2Value[0]); i ++)
         {
-            if (pdlEnumIdsEnumStr2Value[i].enum_id == enum_type)
+            if (pdlEnumIdsEnumStr2Value[i].enumId == enum_type)
             {
                 for (j = 0; j < pdlEnumIdsEnumStr2Value[i].arr_size; j ++)
                 {
@@ -1069,5 +1061,5 @@
                 }
             }
         }
-        return PDL_NOT_FOUND;
+        RETURN_WRAPPER_MAC(PDL_NOT_FOUND);
     }
