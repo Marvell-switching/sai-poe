@@ -1,0 +1,4 @@
+[submodule "sai_poe_library/SAI"]
+	path = sai_poe_library/SAI
+	url = https://github.com/opencomputeproject/SAI.git
+	branch = v1.14

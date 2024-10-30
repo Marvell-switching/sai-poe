@@ -1,0 +1,9 @@
+Package: sai-poe
+Version: 1.0
+Section: base
+Priority: optional
+Architecture: arm64
+Depends: libc6 (>= 2.3.2), libstdc++6 (>= 5.2)
+Maintainer: Your Name <dmurin@marvell.com>
+Description: SAI PoE
+ SAI PoE support.
