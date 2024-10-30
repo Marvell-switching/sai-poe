@@ -1,0 +1,5 @@
+cd sai_poe_library
+make -B
+cd ..
+cp sai_poe_library/libsai.so sai-poe/usr/lib/libsai.so
+dpkg-deb --build sai-poe/

@@ -1,5 +1,5 @@
 # Specify the compiler
-CROSS_COMPILE?=/swtools/devtools/gnueabi/arm_le/arm-none-linux-gnueabi-versions/gcc-arm-10.1-2020.6-x86_64-aarch64-marvell-linux/bin/aarch64-marvell-linux-gnu-
+CROSS_COMPILE?=aarch64-linux-gnu-
 CC = $(CROSS_COMPILE)gcc
 
 # Compiler flags

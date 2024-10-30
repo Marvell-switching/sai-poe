@@ -16,7 +16,7 @@
  */
 
 #include <h/utils/log.h>
-#define LOG_FILE_PATH "/var/log/poelog"
+#include <stdarg.h>
 
 void log_to_file(const char *level, const char *file, const char *func, int line, const char *fmt, ...) {
     FILE *log_file = fopen(LOG_FILE_PATH, "a");
@@ -29,7 +29,9 @@ void log_to_file(const char *level, const char *file, const char *func, int line
 
     // Print the log message to the file
     fprintf(log_file, "[%s:%s:%d] %s: ", file, func, line, level);
+    va_start(args, fmt);
     vfprintf(log_file, fmt, args);
+    va_end(args);
     fprintf(log_file, "\n");
 
     fclose(log_file);

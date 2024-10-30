@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 
-#define LOG_FILE_PATH "/var/log/poelog"
+#define LOG_FILE_PATH "/tmp/poelog"
 
 void log_to_file(const char *level, const char *file, const char *func, int line, const char *fmt, ...);
 
