@@ -716,6 +716,8 @@ sai_status_t sai_api_initialize(_In_ uint64_t flags,
     return SAI_STATUS_SUCCESS;
 }
 
+extern const sai_switch_api_t switch_api;
+
 /**
  * @brief Retrieve a pointer to the C-style method table for desired SAI
  * functionality as specified by the given sai_api_id.
@@ -726,11 +728,20 @@ sai_status_t sai_api_initialize(_In_ uint64_t flags,
  *
  * @return #SAI_STATUS_SUCCESS on success, failure status code on error
  */
-sai_status_t sai_api_query(
-        _In_ sai_api_t api,
-        _Out_ void **api_method_table) {
-
-    *(const sai_poe_api_t**) api_method_table = &poe_api;
+sai_status_t sai_api_query(_In_ sai_api_t api,
+                           _Out_ void **api_method_table)
+{
+    switch(api)
+    {
+    case SAI_API_POE:
+        *(const sai_poe_api_t**) api_method_table = &poe_api;
+        break;
+    case SAI_API_SWITCH:
+        *(const sai_switch_api_t**) api_method_table = &switch_api;
+        break;
+    default:
+        return SAI_STATUS_NOT_IMPLEMENTED;
+    }
 
     return SAI_STATUS_SUCCESS;
 }
