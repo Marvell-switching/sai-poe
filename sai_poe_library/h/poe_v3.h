@@ -611,8 +611,8 @@ typedef struct POE_V3_MSG_PORT_ALT_B_STC {
 typedef struct POE_V3_MSG_PORT_CLASS_STC {
     uint8_t                              logicPortNum;
     uint8_t                              measured_class;
-    uint8_t                              class;
-    uint16_t                             powerLimitMw;
+    uint8_t                              assigned_class;
+    uint16_t                             powerLimitW;
 } POE_V3_MSG_PORT_CLASS_STC;
 
 typedef struct POE_V3_MSG_PORT_PRIORITY_STC {

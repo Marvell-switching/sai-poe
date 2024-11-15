@@ -75,25 +75,25 @@ struct __attribute__((__packed__)) poe_port_status_msg_t {
 struct __attribute__((__packed__)) poe_port_class_msg_t {
     uint8_t key;            // KEY
     uint8_t echo;           // ECHO
-    uint8_t sub;            // SUB
-    uint8_t sub1;           // SUB1
+    uint8_t status;         // SUB
+    uint8_t phy_info;       // SUB1
     uint8_t measured_class; // SUB2
-    uint8_t _data5;         // DATA5
-    uint8_t _data6;         // DATA6
-    uint8_t _data7;         // DATA7
-    uint8_t class;          // DATA8
+    uint8_t requested_class;// DATA5
+    uint8_t requested_power_h;  // DATA6
+    uint8_t requested_power_l;  // DATA7
+    uint8_t assigned_class; // DATA8
     uint8_t power_limit_h;  // DATA9
     uint8_t power_limit_l;  // DATA10
-    uint8_t _data11;        // DATA11
-    uint8_t _data12;        // DATA12
+    uint8_t auto_class_h;   // DATA11
+    uint8_t auto_class_l;   // DATA12
     uint8_t checksum[2];    // CSUM
 };
 
 struct __attribute__((__packed__)) poe_port_measurement_msg_t {
     uint8_t key;            // KEY
     uint8_t echo;           // ECHO
-    uint8_t sub;            // SUB
-    uint8_t sub1;           // SUB1
+    uint8_t sys_voltage_h;  // SUB
+    uint8_t sys_voltage_l;  // SUB1
     uint8_t current_h;      // SUB2
     uint8_t current_l;      // DATA5
     uint8_t consump_h;      // DATA6
@@ -505,29 +505,36 @@ bool parse_rx_msg(
     case POE_PD69200_BT_MSG_SUB1_PORTS_CLASS:
     {
         struct poe_port_class_msg_t *port_class_msg = (struct poe_port_class_msg_t *)msg;
-        uint16_t *powerLimitMw;
+        uint16_t *powerLimitW;
+        /* bits[7..4] - class A (primary), bits[3..0] - class B (secondary)
+           valid values for class A - 0x0..0x8
+           valid values for class B - 0x0..0x5
+           0x9 – Class overcurrent
+           0xA – 2fingers mismatch
+           0xB – Invalid class code
+           0xC – classification not performed */
         dataPtr[1] = port_class_msg->measured_class;
-        dataPtr[2] = port_class_msg->class;
-        powerLimitMw = (uint16_t *)&dataPtr[3];  /* TODO: check if this is actually alligned */
-        *powerLimitMw = port_class_msg->power_limit_h << 8 | port_class_msg->power_limit_l;
+        dataPtr[2] = port_class_msg->assigned_class;
+        powerLimitW = (uint16_t *)&dataPtr[3];  /* TODO: check if this is actually alligned */
+        *powerLimitW = (port_class_msg->power_limit_h << 8 | port_class_msg->power_limit_l) / 10;  /* dW to W */
         /* LOG_PRINT("port #%2u: [class %02x; measured %02x; pwr limit %u]",
             dataPtr[0],
             port_class_msg->class,
             port_class_msg->measured_class,
-            *powerLimitMw
+            *powerLimitW
         ); */
         break;
     }
     case POE_PD69200_BT_MSG_SUB1_PORTS_MEASUREMENT:
     {
         struct poe_port_measurement_msg_t *measurement_msg = (struct poe_port_measurement_msg_t *)msg;
-        uint16_t *current, *consump, *voltage;
-        current = (uint16_t *)&dataPtr[1];
-        consump = (uint16_t *)&dataPtr[3];
-        voltage = (uint16_t *)&dataPtr[5];
-        *current = measurement_msg->current_h << 8 | measurement_msg->current_l;
-        *consump = (measurement_msg->consump_h << 8 | measurement_msg->consump_l) * 100;
-        *voltage = (measurement_msg->voltage_h << 8 | measurement_msg->voltage_l) * 100;
+        uint16_t *current_mA, *power_dW, *voltage_dV;
+        current_mA = (uint16_t *)&dataPtr[1];
+        power_dW = (uint16_t *)&dataPtr[3];
+        voltage_dV = (uint16_t *)&dataPtr[5];
+        *current_mA = measurement_msg->current_h << 8 | measurement_msg->current_l;
+        *power_dW = measurement_msg->consump_h << 8 | measurement_msg->consump_l;
+        *voltage_dV = measurement_msg->voltage_h << 8 | measurement_msg->voltage_l;
         /* LOG_PRINT("port #%2u: [current %u; consump %u; voltage %u]",
             dataPtr[0],
             *current,

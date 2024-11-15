@@ -1513,7 +1513,7 @@ POE_OP_RESULT_ENT poePortGetPowerLimit (
                                  sizeof(powerLimitParams),
                                  (uint8_t*)&powerLimitParams);
     if (result == POE_OP_OK_E) {
-        *powerLimitPtr = powerLimitParams.powerLimitMw;
+        *powerLimitPtr = powerLimitParams.powerLimitW;
     }
 
     rwlock_excl_release(&poe_v3_lock);
@@ -1633,9 +1633,9 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
                                  sizeof(powerConsumptionInfo),
                                  (uint8_t*)&powerConsumptionInfo);
     if (result == POE_OP_OK_E) {
-        powerConsumptionPtr->voltage = powerConsumptionInfo.voltage;
-        powerConsumptionPtr->current = powerConsumptionInfo.current;
-        powerConsumptionPtr->consumption = powerConsumptionInfo.power_consumption;
+        powerConsumptionPtr->current = powerConsumptionInfo.current;  /* mA */
+        powerConsumptionPtr->voltage = ((uint32_t)powerConsumptionInfo.voltage) * 100;  /* dV to mV */
+        powerConsumptionPtr->consumption = ((uint32_t)powerConsumptionInfo.power_consumption) * 100;  /* dW to mW */
     }
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
@@ -1644,13 +1644,12 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
                                  sizeof(portClassParams),
                                  (uint8_t*)&portClassParams);
     if (result == POE_OP_OK_E) {
-        powerConsumptionPtr->assigned_class_a = portClassParams.class >> 4;
+        /* bits[7..4] are class A (primary) */
+        powerConsumptionPtr->assigned_class_a = portClassParams.assigned_class >> 4;
         powerConsumptionPtr->measured_class_a = portClassParams.measured_class >> 4;
-
-        /* is this correct?
-        powerConsumptionPtr->assigned_class_b = portClassParams.class & 0x0f;
+        /* bits[3..0] are class B (secondary) */
+        powerConsumptionPtr->assigned_class_b = portClassParams.assigned_class & 0x0f;
         powerConsumptionPtr->measured_class_b = portClassParams.measured_class & 0x0f;
-         */
     }
 
     rwlock_excl_release(&poe_v3_lock);
