@@ -681,7 +681,7 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
             result = poePortGetStatus(*internal_port_id_ptr, &(attr_list[i].value.s32));
             break;
         case SAI_POE_PORT_ATTR_POWER_PRIORITY:
-            /* not supported */
+            result = poePortGetPowerPriority(*internal_port_id_ptr, &(attr_list[i].value.s32));
             break;
         default:
             LOG_ERROR("invalid attribute");

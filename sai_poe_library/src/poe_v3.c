@@ -1522,7 +1522,7 @@ POE_OP_RESULT_ENT poePortGetPowerLimit (
 }
 
 
-POE_OP_RESULT_ENT portPowerPriorityToHw(
+POE_OP_RESULT_ENT portSaiPowerPriorityToHw(
     uint32_t sai_prio,
     uint8_t *hw_prio
 )
@@ -1530,13 +1530,35 @@ POE_OP_RESULT_ENT portPowerPriorityToHw(
     switch(sai_prio)
     {
     case SAI_POE_PORT_POWER_PRIORITY_TYPE_LOW:
-        *hw_prio = POE_PSE_PORT_POWER_PRIORITY_CRITICAL_E;
+        *hw_prio = POE_V3_PORT_PRIORITY_LOW_CNS;
         break;
     case SAI_POE_PORT_POWER_PRIORITY_TYPE_HIGH:
-        *hw_prio = POE_PSE_PORT_POWER_PRIORITY_HIGH_E;
+        *hw_prio = POE_V3_PORT_PRIORITY_HIGH_CNS;
         break;
     case SAI_POE_PORT_POWER_PRIORITY_TYPE_CRITICAL:
-        *hw_prio = POE_PSE_PORT_POWER_PRIORITY_LOW_E;
+        *hw_prio = POE_V3_PORT_PRIORITY_CRITICAL_CNS;
+        break;
+    default:
+        return POE_OP_FAILED_E;
+    }
+    return POE_OP_OK_E;
+}
+
+POE_OP_RESULT_ENT portHwPowerPriorityToSai(
+    uint8_t hw_prio,
+    uint32_t *sai_prio
+)
+{
+    switch(hw_prio)
+    {
+    case POE_V3_PORT_PRIORITY_LOW_CNS:
+        *sai_prio = SAI_POE_PORT_POWER_PRIORITY_TYPE_LOW;
+        break;
+    case POE_V3_PORT_PRIORITY_HIGH_CNS:
+        *sai_prio = SAI_POE_PORT_POWER_PRIORITY_TYPE_HIGH;
+        break;
+    case POE_V3_PORT_PRIORITY_CRITICAL_CNS:
+        *sai_prio = SAI_POE_PORT_POWER_PRIORITY_TYPE_CRITICAL;
         break;
     default:
         return POE_OP_FAILED_E;
@@ -1568,10 +1590,10 @@ POE_OP_RESULT_ENT poePortSetPowerPriority (
     portParams.port_mode = POE_V3_BT_PORT_MODE_NO_CHANGE | POE_V3_BT_PORT_CLASS_ERROR_NO_CHANGE;
     portParams.opmode = POE_V3_OPERATION_MODE_NO_CHANGE;
     portParams.power_mode = POE_V3_BT_PORT_MODE_POWER_NO_CHANGE;
-    result = portPowerPriorityToHw(powerPriority, &portParams.priority);
+    result = portSaiPowerPriorityToHw(powerPriority, &portParams.priority);
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to translate priority");
-        return result;
+        goto exit;
     }
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
@@ -1582,7 +1604,7 @@ POE_OP_RESULT_ENT poePortSetPowerPriority (
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
-
+exit:
     rwlock_excl_release(&poe_v3_lock);
 
     return result;
@@ -1767,6 +1789,54 @@ POE_OP_RESULT_ENT poePortGetStatus (
         *statusPtr = portHwStatusToDetectionStatus(portParams.status);
     }
 
+    rwlock_excl_release(&poe_v3_lock);
+
+    return result;
+}
+
+/**
+ * @brief Get power priority of the POE port
+ *
+ * @param[in] frontPanelIndex Front panel index
+ * @param[in] priorityPtr Port priority
+ *
+ * @return #POE_OP_OK_E if operation is successful otherwise a different
+ *    error code is returned.
+ */
+POE_OP_RESULT_ENT poePortGetPowerPriority (
+    uint32_t frontPanelIndex,
+    uint32_t *priorityPtr
+)
+{
+    POE_V3_MSG_PORT_PARAMS_GET_STC portParams = {0};
+    sai_poe_port_power_priority_t sai_prio;
+    POE_OP_RESULT_ENT result;
+
+    if(priorityPtr == NULL) {
+        LOG_ERROR("invalid pointer");
+        return POE_OP_FAILED_E;
+    }
+
+    rwlock_excl_acquire(&poe_v3_lock);
+
+    portParams.logic_port = (uint8_t)frontPanelIndex;
+
+    result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
+                                 POE_V3_MSG_DIR_GET_CNS,
+                                 POE_V3_PORT_MSG_PORT_PARAMS_CNS,
+                                 sizeof(portParams),
+                                 (uint8_t*)&portParams);
+    if (result != POE_OP_OK_E) {
+        goto exit;
+    }
+
+    result = portHwPowerPriorityToSai(portParams.priority, priorityPtr);
+    if (result != POE_OP_OK_E) {
+        LOG_ERROR("Failed to convert HW port prio (0x%02x) to SAI port prio", portParams.priority);
+        goto exit;
+    }
+
+exit:
     rwlock_excl_release(&poe_v3_lock);
 
     return result;

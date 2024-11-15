@@ -849,6 +849,7 @@ POE_OP_RESULT_ENT poePortGetPowerLimit(uint32_t frontPanelIndex, uint32_t *power
 POE_OP_RESULT_ENT poePortSetPowerPriority(uint32_t frontPanelIndex, const uint32_t powerPriority);
 POE_OP_RESULT_ENT poePortGetPowerConsumption(uint32_t frontPanelIndex, sai_poe_port_power_consumption_t *powerConsumptionPtr);
 POE_OP_RESULT_ENT poePortGetStatus (uint32_t frontPanelIndex, uint32_t *statusPtr);
+POE_OP_RESULT_ENT poePortGetPowerPriority (uint32_t frontPanelIndex, uint32_t *statusPtr);
 uint16_t swap16(uint16_t value);
 uint32_t swap32(uint32_t value);
 uint32_t getNumOfPse();
