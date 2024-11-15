@@ -1664,55 +1664,66 @@ sai_poe_port_status_t portHwStatusToDetectionStatus(uint32_t portStatus)
 
     switch (portStatus)
     {
-    case 0x80:  // 2Pair-D NC (0x80)
-    case 0x81:  // 2Pair-D (0x81)
-    case 0x82:  // 2Pair-D NC (0x82)
-    case 0x83:  // 2Pair-D NC (0x83)
-    case 0x84:  // 4Pair-D NC (0x84)
-    case 0x85:  // 2Pair-D (0x85)
-    case 0x86:  // 4Pair-D (0x86)
-    case 0x87:  // 2Pair-D (0x87)
-    case 0x88:  // 2Pair-D (0x88)
-    case 0x89:  // 4Pair-D (0x89)
-    case 0x90:  // Force 2Pair (0x90)
-    case 0x91:  // Force 4Pair (0x91)
+    /* TODO: add logs to error statuses */
+    case 0x06:  // Main supply voltage is high. Mains voltage is higher than Max Voltage limit.
+    case 0x07:  // Main supply voltage is low. Mains voltage is lower than Min Voltage limit.
+    case 0x08:  // ‘Disable all ports’ pin is active. Hardware pin disables all ports.
+    case 0x0C:  // Non-existing port number. Fewer ports are available than the maximum number of ports that the Controller can support. Unavailable ports are considered ‘off’. Currently not used.
+    case 0x12:  // Internal hardware fault. Port does not respond. Hardware fault, system initialization or PD69200 lost communication with PD69208 device allocated for this port. (Part of refresh function).
+    case 0x1A:  // User setting. User command set port to off.
+    case 0x1B:  // Detection is in process. Interim state during line detection. Status will change after detection process is completed.
+    case 0x1C:  // Non-802.3AF/AT powered device. Non-standard PD connected.
+    case 0x1E:  // Underload state. Underload state according to 802.3AF/AT (current is below Imin).
+    case 0x1F:  // Overload state Overload state according to 802.3AF/AT (current is above Icut). OR (PM3 != 0 and (PD class report > user predefined power value)).
+    case 0x20:  // Power budget exceeded. Power Management function shuts down port, due to lack of power. Port is shut down or remains off.
+    case 0x22:  // Configuration change Port configuration was changed or port mode was changed, causing the port to turn off. This status is momentary (2sec delay). After the delay the port status will be updated according to the new configuration/mode.
+    case 0x24:  // Voltage injection into the port. Port fails due to voltage being applied to the port from external source.
+    case 0x25:  // Improper Capacitor Detection results or Detection values indicating short Fail due to out-of-range capacitor value or Fail due to detected short value (When mask 0x04 is set).
+    case 0x26:  // Discharged load. Port fails due to system voltage supply through other port. Check other port for status 0x24. This error is linked with mask 0x1F enable.
+    case 0x34:  // Short condition. Short condition was detected.
+    case 0x35:  // Over temperature at the port. Port temperature protection mechanism was activated.
+    case 0x36:  // Device is too hot. The die temperature is above safe operating value.
+    case 0x43:  // Class Error Illegal class
+    case 0x48:  // Recovery UDL Reserved During crash a recovery port delivering power was disconnected due to UDL.
+    case 0x49:  // Recovery PG Event Reserved During crash a recovery port delivering power was disconnected due to PG event.
+    case 0x4A:  // Recovery OVL Reserved During crash a recovery port delivering power was disconnected due to OVL.
+    case 0x4B:  // Recovery SC Reserved During crash a recovery port delivering power was disconnected due to SC.
+    case 0x4C:  // Recovery Voltage injection Reserved Voltage was applied to the port from external source, during or before crash.
+        detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;
+        break;
+
+    case 0x11:  // Port is yet undefined. Port is not mapped to physical port or port is in unknown state or PD69200 fail to communicate with PD69208 device allocated for this port.
+    case 0x37:  // Unknown device port status. The device returns an unknown port status for the software. Currently not used.
+    case 0x3C:  // Power Management-Static. Calculated power > power limit.
+    case 0x3D:  // Power Management-Static –ovl Port Power up was denied due to (PD class report power > user predefined power value). Note: Power denied counter will advance.
+    case 0x41:  // Power denied: Hardware power limit Port was not turned on due to hardware power limit (PD class power > Hardware class limit) Example: PoH PD over M device port.
+    case 0x44:  // Port turn off during host crash Reserved Port is off – After host crash the port is off and waits for host command to proceed with new detection cycles. This status appears due to OVL,UDL or Short events during host crash
+    case 0x45:  // Delivered power port was forced to be shut down at host crash Reserved Port is off – After host crash the port is off and waits for host command to proceed with new detection cycles. The port was delivering power before host crash but was configured to be forced shut when host crashes.
+    case 0x46:  // An enabled port was forced to be shut down at host crash Reserved Port is off – after host crash the port is off and waits for host command to proceed with new detection cycles. The port was enabled and not delivering power before host crash and was configured to be forced shut when host crashes.
+    case 0x47:  // Force Power Crash Error Reserved Port is at force power error, according to IEEE test mode error. The port was forced power and host crash occurred.
+        detectionStatus = SAI_POE_PORT_STATUS_TYPE_FAULT;
+        break;
+
+    // New port statuses for BT ports:
+    case 0x80:  // 2P Port delivering non IEEE non IEEE PD was detected using 2P matrix in BT mode
+    case 0x81:  // 2P Port delivering IEEE 802.3BT-compliant PD was detected using 2P matrix
+    case 0x82:  // 4P Port that deliver only 2 Pair non IEEE Signature failure on Alt-B, allowing power only on Alt-A (Non IEEE or Legacy PD).
+    case 0x83:  // 4P Port delivering 2P non IEEE non IEEE PD was detected using 4P matrix in BT mode and power as 2Pair
+    case 0x84:  // 4P Port delivering 4P non IEEE non IEEE PD was detected using 4P matrix in BT mode and power as 4Pair
+    case 0x85:  // 4P Port delivering 2P IEEE SSPD 802.3BT- SSPD was detected using 4P matrix and operate as 2P if requested class =< 4
+    case 0x86:  // 4P Port delivering 4P IEEE SSPD 802.3BT- SSPD was detected using 4P matrix and operate as 4P if requested class > 4
+    case 0x87:  // 4P Port delivering 2P IEEE DSPD in1st phase. 802.3BT- DSPD was detected using 4P matrix and operate as 2P due to 4pair candidate validation in two cycles.
+    case 0x88:  // 4P Port delivering 2P IEEE DSPD 802.3BT- DSPD was detected using 4P matrix and operate as 2P
+    case 0x89:  // 4P Port delivering 4P IEEE DSPD 802.3BT- DSPD was detected using 4P matrix and operate as 4P
+    case 0x90:  // Force Power BT 2P Port matrix 2P and delivers power due to force power command
+    case 0x91:  // Force Power BT 4P Port matrix 4P and delivers power on both pair sets due to force power command
+    case 0xA0:  // Force Power BT Error Force power command was set, one of the port pair sets stop delivering power, from at least one reason out of various reasons (System related, Device related, port related or Pair set related)
+    case 0xA7:  // Connection Check error This error will be reported only in 4 pair port when invalid connection check signature was detected and the port will not proceed to detection. In such case detection fail counter will be incremented.
         detectionStatus = SAI_POE_PORT_STATUS_TYPE_DELIVERING_POWER;
         break;
 
-    case 0x3C:  // "PWR MS (0x3C)"
-    case 0x3D:  // "PWR MS-OVL (0x3D)"
+    case 0xA8:  // Open Port is not connected
         detectionStatus = SAI_POE_PORT_STATUS_TYPE_SEARCHING;
-        break;
-
-    case 0x06:
-    case 0x07:
-    case 0x08:
-    case 0x0C:
-    case 0x12:
-    case 0x1A:
-    case 0x1B:
-    case 0x1C:
-    case 0x1E:
-    case 0x1F:
-    case 0x20:
-    case 0x21:
-    case 0x22:
-    case 0x24:
-    case 0x25:
-    case 0x26:
-    case 0x34:
-    case 0x35:
-    case 0x36:
-    case 0x43:
-    case 0x44:
-    case 0x45:
-    case 0x46:
-    case 0x48:
-    case 0x49:
-    case 0x4A:
-    case 0x4B:
-    case 0x4C:
-        detectionStatus = SAI_POE_PORT_STATUS_TYPE_OFF;
         break;
 
     default:

@@ -494,6 +494,7 @@ bool parse_rx_msg(
             port_params_msg->priority
         ); */
         /* FIXME: dont use magic numbers */
+        /* see portHwStatusToDetectionStatus() for status details */
         dataPtr[1] = port_params_msg->status;
         /* 0b0000 - disable, 0b0001 - enable, 0b0010 - reserved, 0b0011 - force enable, bits[7..4] are reserved */
         dataPtr[2] = port_params_msg->enabled & 1;
