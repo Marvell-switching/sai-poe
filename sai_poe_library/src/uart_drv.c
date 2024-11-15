@@ -495,7 +495,8 @@ bool parse_rx_msg(
         ); */
         /* FIXME: dont use magic numbers */
         dataPtr[1] = port_params_msg->status;
-        dataPtr[2] = port_params_msg->enabled;
+        /* 0b0000 - disable, 0b0001 - enable, 0b0010 - reserved, 0b0011 - force enable, bits[7..4] are reserved */
+        dataPtr[2] = port_params_msg->enabled & 1;
         dataPtr[3] = port_params_msg->opmode;
         dataPtr[4] = port_params_msg->priority;
         break;
