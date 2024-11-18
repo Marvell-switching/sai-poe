@@ -75,25 +75,25 @@ struct __attribute__((__packed__)) poe_port_status_msg_t {
 struct __attribute__((__packed__)) poe_port_class_msg_t {
     uint8_t key;            // KEY
     uint8_t echo;           // ECHO
-    uint8_t status;         // SUB
-    uint8_t phy_info;       // SUB1
+    uint8_t sub;            // SUB
+    uint8_t sub1;           // SUB1
     uint8_t measured_class; // SUB2
-    uint8_t requested_class;// DATA5
-    uint8_t requested_power_h;  // DATA6
-    uint8_t requested_power_l;  // DATA7
+    uint8_t _data5;         // DATA5
+    uint8_t _data6;         // DATA6
+    uint8_t _data7;         // DATA7
     uint8_t assigned_class; // DATA8
     uint8_t power_limit_h;  // DATA9
     uint8_t power_limit_l;  // DATA10
-    uint8_t auto_class_h;   // DATA11
-    uint8_t auto_class_l;   // DATA12
+    uint8_t _data11;        // DATA11
+    uint8_t _data12;        // DATA12
     uint8_t checksum[2];    // CSUM
 };
 
 struct __attribute__((__packed__)) poe_port_measurement_msg_t {
     uint8_t key;            // KEY
     uint8_t echo;           // ECHO
-    uint8_t sys_voltage_h;  // SUB
-    uint8_t sys_voltage_l;  // SUB1
+    uint8_t sub;            // SUB
+    uint8_t sub1;           // SUB1
     uint8_t current_h;      // SUB2
     uint8_t current_l;      // DATA5
     uint8_t consump_h;      // DATA6
