@@ -1400,7 +1400,7 @@ POE_OP_RESULT_ENT poePortSetAdminEnable(
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    portParams.logic_port = (uint8_t)frontPanelIndex;
+    portParams.logic_port = (uint8_t)frontPanelIndex - 1;
     portParams.enable = enable ? POE_V3_PORT_ADMIN_ENABLE_CNS : POE_V3_PORT_ADMIN_DISABLE_CNS;
     portParams.port_mode = POE_V3_BT_PORT_MODE_NO_CHANGE | POE_V3_BT_PORT_CLASS_ERROR_NO_CHANGE;
     portParams.opmode = POE_V3_OPERATION_MODE_NO_CHANGE;
@@ -1448,7 +1448,7 @@ POE_OP_RESULT_ENT poePortGetAdminEnable (
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    portParams.logic_port = (uint8_t)frontPanelIndex;
+    portParams.logic_port = (uint8_t)frontPanelIndex - 1;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
                                  POE_V3_MSG_DIR_GET_CNS,
@@ -1519,7 +1519,7 @@ POE_OP_RESULT_ENT poePortGetPowerLimit (
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    powerLimitParams.logicPortNum = (UINT_8)frontPanelIndex;
+    powerLimitParams.logicPortNum = (UINT_8)frontPanelIndex - 1;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
                                  POE_V3_MSG_DIR_GET_CNS,
@@ -1601,7 +1601,7 @@ POE_OP_RESULT_ENT poePortSetPowerPriority (
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    portParams.logic_port = (uint8_t)frontPanelIndex;
+    portParams.logic_port = (uint8_t)frontPanelIndex - 1;
     portParams.enable = POE_V3_PORT_ADMIN_NO_CHANGE;
     portParams.port_mode = POE_V3_BT_PORT_MODE_NO_CHANGE | POE_V3_BT_PORT_CLASS_ERROR_NO_CHANGE;
     portParams.opmode = POE_V3_OPERATION_MODE_NO_CHANGE;
@@ -1666,7 +1666,7 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    powerConsumptionInfo.logicPortNum = (UINT_8)frontPanelIndex;
+    powerConsumptionInfo.logicPortNum = (UINT_8)frontPanelIndex - 1;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
                                  POE_V3_MSG_DIR_GET_CNS,
@@ -1678,6 +1678,8 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
         powerConsumptionPtr->voltage = ((uint32_t)powerConsumptionInfo.voltage) * 100;  /* dV to mV */
         powerConsumptionPtr->consumption = ((uint32_t)powerConsumptionInfo.power_consumption) * 100;  /* dW to mW */
     }
+
+    portClassParams.logicPortNum = (UINT_8)frontPanelIndex - 1;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
                                  POE_V3_MSG_DIR_GET_CNS,
@@ -1799,7 +1801,7 @@ POE_OP_RESULT_ENT poePortGetStatus (
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    portParams.logic_port = (uint8_t)frontPanelIndex;
+    portParams.logic_port = (uint8_t)frontPanelIndex - 1;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
                                  POE_V3_MSG_DIR_GET_CNS,
@@ -1842,7 +1844,7 @@ POE_OP_RESULT_ENT poePortGetPowerPriority (
 
     rwlock_excl_acquire(&poe_v3_lock);
 
-    portParams.logic_port = (uint8_t)frontPanelIndex;
+    portParams.logic_port = (uint8_t)frontPanelIndex - 1;
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS,
                                  POE_V3_MSG_DIR_GET_CNS,
