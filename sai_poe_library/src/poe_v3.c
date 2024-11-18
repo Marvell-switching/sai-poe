@@ -945,13 +945,15 @@ POE_OP_RESULT_ENT poeDevGetTotalPower (
     int32_t *totalPowerPtr
 )
 {
-    POE_V3_MSG_SYS_POWER_SUPPLY_PARAMS_STC power_supply_params = {0};
+    POE_V3_MSG_SYS_POWER_SUPPLY_PARAMS_STC power_supply_params;
     POE_OP_RESULT_ENT result;
 
     if(totalPowerPtr == NULL) {
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&power_supply_params, EXT_DRV_UNUSED_FIELD_CNS, sizeof(power_supply_params));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -988,13 +990,15 @@ POE_OP_RESULT_ENT poeDevGetPowerConsumption (
     int32_t *powerConsumptionMwPtr
 )
 {
-    POE_V3_MSG_SYS_POWER_SUPPLY_PARAMS_STC power_supply_params = {0};
+    POE_V3_MSG_SYS_POWER_SUPPLY_PARAMS_STC power_supply_params;
     POE_OP_RESULT_ENT result;
 
     if(powerConsumptionMwPtr == NULL) {
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&power_supply_params, EXT_DRV_UNUSED_FIELD_CNS, sizeof(power_supply_params));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1031,13 +1035,15 @@ POE_OP_RESULT_ENT poeDevGetVersion(
     char *versionPtr
 )
 {
-    POE_V3_MSG_SYS_SYSTEM_VERSION_STC versionParams = {0};
+    POE_V3_MSG_SYS_SYSTEM_VERSION_STC versionParams;
     POE_OP_RESULT_ENT result;
 
     if(versionPtr == NULL) {
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&versionParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(versionParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1159,13 +1165,15 @@ POE_OP_RESULT_ENT poePseGetSoftwareVersion (
     char *versionPtr
 )
 {
-    POE_V3_MSG_SYS_SYSTEM_VERSION_STC versionParams = {0};
+    POE_V3_MSG_SYS_SYSTEM_VERSION_STC versionParams;
     POE_OP_RESULT_ENT result;
 
     if(versionPtr == NULL) {
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&versionParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(versionParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1385,8 +1393,10 @@ POE_OP_RESULT_ENT poePortSetAdminEnable(
     const bool enable
 )
 {
-    POE_V3_MSG_PORT_PARAMS_SET_STC portParams = {0};
+    POE_V3_MSG_PORT_PARAMS_SET_STC portParams;
     POE_OP_RESULT_ENT result;
+
+    memset(&portParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(portParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1426,13 +1436,15 @@ POE_OP_RESULT_ENT poePortGetAdminEnable (
     bool *enablePtr
 )
 {
-    POE_V3_MSG_PORT_PARAMS_GET_STC portParams = {0};
+    POE_V3_MSG_PORT_PARAMS_GET_STC portParams;
     POE_OP_RESULT_ENT result;
 
     if(enablePtr == NULL) {
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&portParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(portParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1500,8 +1512,10 @@ POE_OP_RESULT_ENT poePortGetPowerLimit (
     uint32_t *powerLimitPtr
 )
 {
-    POE_V3_MSG_PORT_CLASS_STC powerLimitParams = {0};
+    POE_V3_MSG_PORT_CLASS_STC powerLimitParams;
     POE_OP_RESULT_ENT result;
+
+    memset(&powerLimitParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(powerLimitParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1580,8 +1594,10 @@ POE_OP_RESULT_ENT poePortSetPowerPriority (
     const uint32_t powerPriority
 )
 {
-    POE_V3_MSG_PORT_PARAMS_SET_STC portParams = {0};
+    POE_V3_MSG_PORT_PARAMS_SET_STC portParams;
     POE_OP_RESULT_ENT result;
+
+    memset(&portParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(portParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1624,8 +1640,8 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
     sai_poe_port_power_consumption_t *powerConsumptionPtr
 )
 {
-    POE_V3_MSG_PORT_MEASUREMENTS_STC powerConsumptionInfo = {0};
-    POE_V3_MSG_PORT_CLASS_STC portClassParams = {0};
+    POE_V3_MSG_PORT_MEASUREMENTS_STC powerConsumptionInfo;
+    POE_V3_MSG_PORT_CLASS_STC portClassParams;
     POE_OP_RESULT_ENT result;
 /*
     sai_poe_port_active_channel_type_t convertStatusToSai[]={
@@ -1644,6 +1660,9 @@ POE_OP_RESULT_ENT poePortGetPowerConsumption (
         SAI_POE_PORT_SIGNATURE_TYPE_SINGLE,
         SAI_POE_PORT_SIGNATURE_TYPE_DUAL
     }; */
+
+    memset(&powerConsumptionInfo, EXT_DRV_UNUSED_FIELD_CNS, sizeof(powerConsumptionInfo));
+    memset(&portClassParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(portClassParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1768,13 +1787,15 @@ POE_OP_RESULT_ENT poePortGetStatus (
     uint32_t *statusPtr
 )
 {
-    POE_V3_MSG_PORT_PARAMS_GET_STC portParams = {0};
+    POE_V3_MSG_PORT_PARAMS_GET_STC portParams;
     POE_OP_RESULT_ENT result;
 
     if(statusPtr == NULL) {
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&portParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(portParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
@@ -1808,7 +1829,7 @@ POE_OP_RESULT_ENT poePortGetPowerPriority (
     uint32_t *priorityPtr
 )
 {
-    POE_V3_MSG_PORT_PARAMS_GET_STC portParams = {0};
+    POE_V3_MSG_PORT_PARAMS_GET_STC portParams;
     sai_poe_port_power_priority_t sai_prio;
     POE_OP_RESULT_ENT result;
 
@@ -1816,6 +1837,8 @@ POE_OP_RESULT_ENT poePortGetPowerPriority (
         LOG_ERROR("invalid pointer");
         return POE_OP_FAILED_E;
     }
+
+    memset(&portParams, EXT_DRV_UNUSED_FIELD_CNS, sizeof(portParams));
 
     rwlock_excl_acquire(&poe_v3_lock);
 
