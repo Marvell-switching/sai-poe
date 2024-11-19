@@ -395,7 +395,6 @@ static sai_status_t get_poe_device_attribute(
             LOG_ERROR("invalid attribute");
             return SAI_STATUS_FAILURE;
         }
-        LOG_PRINT("dev %u attr %u: [rc=%u]", *internal_device_id_ptr, attr_list[i].id, result);
     }
 
     /* poe result to sai result */

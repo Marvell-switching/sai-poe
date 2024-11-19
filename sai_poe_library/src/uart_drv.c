@@ -454,7 +454,6 @@ int communicate(
             LOG_ERROR("Error flushing input queue");
             goto retry;
         }
-        LOG_PRINT("received message %d bytes long", rc);
         if (check_rx_msg(tx_msg, rx_msg, rc) != 0)
         {
             goto retry;

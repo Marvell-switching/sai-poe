@@ -1412,7 +1412,6 @@ POE_OP_RESULT_ENT poePortSetAdminEnable(
                                  POE_V3_PORT_MSG_PORT_PARAMS_CNS,
                                  sizeof(portParams),
                                  (uint8_t*)&portParams);
-    LOG_PRINT("port %u: %s [rc=%u]", frontPanelIndex, enable ? "on" : "off", result);
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to set data");
     }
@@ -1455,7 +1454,6 @@ POE_OP_RESULT_ENT poePortGetAdminEnable (
                                  POE_V3_PORT_MSG_PORT_PARAMS_CNS,
                                  sizeof(portParams),
                                  (uint8_t*)&portParams);
-    LOG_PRINT("port %u: %s [rc=%u]", frontPanelIndex, portParams.enable ? "on" : "off", result);
     if(result == POE_OP_OK_E) {
         *enablePtr = portParams.enable;
     }
