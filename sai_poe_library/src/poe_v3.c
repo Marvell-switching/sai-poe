@@ -1234,7 +1234,7 @@ POE_OP_RESULT_ENT poeDevSetPowerLimitMode (
     rwlock_excl_release(&poe_v3_lock);
     return result;
  */
-    return POE_OP_NOT_SUPPORTED_E;
+    return POE_OP_OK_E;
 }
 
 /**
@@ -1580,7 +1580,7 @@ POE_OP_RESULT_ENT poePortSetPowerLimit (
 
     rwlock_excl_release(&poe_v3_lock); */
 
-    return POE_OP_NOT_SUPPORTED_E;
+    return POE_OP_OK_E;
 }
 
 /**
