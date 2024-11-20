@@ -1741,6 +1741,8 @@ sai_poe_port_status_t portHwStatusToDetectionStatus(uint32_t portStatus)
     case 0x45:  // Delivered power port was forced to be shut down at host crash Reserved Port is off – After host crash the port is off and waits for host command to proceed with new detection cycles. The port was delivering power before host crash but was configured to be forced shut when host crashes.
     case 0x46:  // An enabled port was forced to be shut down at host crash Reserved Port is off – after host crash the port is off and waits for host command to proceed with new detection cycles. The port was enabled and not delivering power before host crash and was configured to be forced shut when host crashes.
     case 0x47:  // Force Power Crash Error Reserved Port is at force power error, according to IEEE test mode error. The port was forced power and host crash occurred.
+    case 0xA0:  // Force Power BT Error Force power command was set, one of the port pair sets stop delivering power, from at least one reason out of various reasons (System related, Device related, port related or Pair set related)
+    case 0xA7:  // Connection Check error This error will be reported only in 4 pair port when invalid connection check signature was detected and the port will not proceed to detection. In such case detection fail counter will be incremented.
         detectionStatus = SAI_POE_PORT_STATUS_TYPE_FAULT;
         break;
 
@@ -1757,8 +1759,6 @@ sai_poe_port_status_t portHwStatusToDetectionStatus(uint32_t portStatus)
     case 0x89:  // 4P Port delivering 4P IEEE DSPD 802.3BT- DSPD was detected using 4P matrix and operate as 4P
     case 0x90:  // Force Power BT 2P Port matrix 2P and delivers power due to force power command
     case 0x91:  // Force Power BT 4P Port matrix 4P and delivers power on both pair sets due to force power command
-    case 0xA0:  // Force Power BT Error Force power command was set, one of the port pair sets stop delivering power, from at least one reason out of various reasons (System related, Device related, port related or Pair set related)
-    case 0xA7:  // Connection Check error This error will be reported only in 4 pair port when invalid connection check signature was detected and the port will not proceed to detection. In such case detection fail counter will be incremented.
         detectionStatus = SAI_POE_PORT_STATUS_TYPE_DELIVERING_POWER;
         break;
 
