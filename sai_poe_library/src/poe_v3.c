@@ -647,12 +647,12 @@ POE_OP_RESULT_ENT poeInitialize(void) {
 
     LOG_PRINT("successful power bank initalization");
 
-    /* set poe port matrix *//*
+    /* set poe port matrix */
     result = poePortMatrixInitialize();
     if(result != POE_OP_OK_E) {
         LOG_ERROR("failed to initialize port matrix");
         goto exit;
-    } */
+    }
 
     LOG_PRINT("successful port matrix initalization");
 
@@ -770,12 +770,98 @@ bool poePortGetSecondPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalI
     return true;
 }
 
+/* FIXME: use xml to pass this data */
+/* port index, physical index A, physical index B */
+/* 0xff means unused */
+uint32_t port_map[][3] = {
+    {0, 0x21, 0xff},
+    {1, 0x26, 0xff},
+    {2, 0x22, 0xff},
+    {3, 0x25, 0xff},
+    {4, 0x23, 0xff},
+    {5, 0x24, 0xff},
+    {6, 0x27, 0xff},
+    {7, 0x20, 0xff},
+    {8, 0x2f, 0xff},
+    {9, 0x28, 0xff},
+    {10, 0x2c, 0xff},
+    {11, 0x2b, 0xff},
+    {12, 0x2d, 0xff},
+    {13, 0x2a, 0xff},
+    {14, 0x2e, 0xff},
+    {15, 0x29, 0xff},
+    {16, 0x31, 0xff},
+    {17, 0x36, 0xff},
+    {18, 0x32, 0xff},
+    {19, 0x35, 0xff},
+    {20, 0x34, 0xff},
+    {21, 0x33, 0xff},
+    {22, 0x30, 0xff},
+    {23, 0x37, 0xff},
+    {24, 0x3f, 0xff},
+    {25, 0x38, 0xff},
+    {26, 0x3c, 0xff},
+    {27, 0x3b, 0xff},
+    {28, 0x3d, 0xff},
+    {29, 0x3a, 0xff},
+    {30, 0x3e, 0xff},
+    {31, 0x39, 0xff},
+    {32, 0x05, 0x02},
+    {33, 0x04, 0x03},
+    {34, 0x07, 0x00},
+    {35, 0x06, 0x01},
+    {36, 0x09, 0x0e},
+    {37, 0x08, 0x0f},
+    {38, 0x0b, 0x0c},
+    {39, 0x0a, 0x0d},
+    {40, 0x15, 0x12},
+    {41, 0x14, 0x13},
+    {42, 0x17, 0x10},
+    {43, 0x16, 0x11},
+    {44, 0x19, 0x1e},
+    {45, 0x18, 0x1f},
+    {46, 0x1b, 0x1c},
+    {47, 0x1a, 0x1d}
+};
+
+#define ARRAY_SIZE(arr_) (sizeof(arr_) / sizeof(arr_[0]))
 /**
  * @brief Intialize port matrix
  *
  * @return #POE_OP_OK_E if operation is successful otherwise a different
  *    error code is returned.
  */
+POE_OP_RESULT_ENT poePortMatrixInitialize()
+{
+    uint32_t physicalNumberA, physicalNumberB, logic_port, i;
+    bool success;
+
+    for (i = 0; i < ARRAY_SIZE(port_map); i++)
+    {
+        logic_port = port_map[i][0];
+        physicalNumberA = port_map[i][1];
+        physicalNumberB = port_map[i][2];
+
+        /* FIXME: use poeV3SendReceiveMsg() */
+        success = uartSetPortTempMatrix((uint8_t)logic_port, (uint8_t)physicalNumberA, (uint8_t)physicalNumberB);
+        if (!success)
+        {
+            LOG_ERROR("failed to set port matrix");
+            return POE_OP_FAILED_E;
+        }
+    }
+
+    success = uartSetActiveMatrix();
+    if (!success)
+    {
+        LOG_ERROR("failed to set active matrix");
+        return POE_OP_FAILED_E;
+    }
+
+    return POE_OP_OK_E;
+}
+
+#if 0
 POE_OP_RESULT_ENT poePortMatrixInitialize() {
     uint32_t                          physicalNumberA, physicalNumberB, frontPanelIndex, index = 0;
     POE_PORT_HW_TYPE_ENT               poePortHwType;
@@ -834,6 +920,7 @@ POE_OP_RESULT_ENT poePortMatrixInitialize() {
     LOG_ERROR("failed to get entries");
     return POE_OP_FAILED_E;
 }
+#endif
 
 /**
  * @brief send/receive message to/from the poe firmware

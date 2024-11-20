@@ -61,6 +61,10 @@ bool poeUartSendReceiveMsg(
     uint8_t *dataPtr
 );
 
+/* FIXME: refactor */
+bool uartSetPortTempMatrix(uint8_t logic_port, uint8_t physicalNumberA, uint8_t physicalNumberB);
+bool uartSetActiveMatrix();
+
 /**
  * @brief Initialize POE IPC.
  *

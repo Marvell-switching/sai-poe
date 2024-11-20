@@ -616,3 +616,41 @@ int poeUartInit()
     }
     return 0;
 }
+
+/* FIXME: remove in favor of poeUartSendReceiveMsg() */
+bool uartSetPortTempMatrix(uint8_t logic_port, uint8_t physicalNumberA, uint8_t physicalNumberB)
+{
+    struct poe_msg_t tx_msg;
+    uint8_t rx_msg[sizeof(tx_msg)];
+
+    memset(&tx_msg, POE_PD69200_MSG_N, sizeof(tx_msg));
+    tx_msg.key = 0x00;
+    tx_msg.echo = 0x7A;
+    tx_msg.sub = 0x05;
+    tx_msg.sub1 = 0x43;
+    tx_msg.data[0] = logic_port;
+    tx_msg.data[1] = physicalNumberA;
+    tx_msg.data[2] = physicalNumberB;
+    set_checksum(&tx_msg);
+
+    int rc = communicate(&tx_msg, rx_msg);
+    usleep(40*1000);  // 40ms
+    return rc == 0;
+}
+
+bool uartSetActiveMatrix()
+{
+    struct poe_msg_t tx_msg;
+    uint8_t rx_msg[sizeof(tx_msg)];
+
+    memset(&tx_msg, POE_PD69200_MSG_N, sizeof(tx_msg));
+    tx_msg.key = 0x00;
+    tx_msg.echo = 0xAA;
+    tx_msg.sub = 0x07;
+    tx_msg.sub1 = 0x43;
+    set_checksum(&tx_msg);
+
+    int rc = communicate(&tx_msg, rx_msg);
+    usleep(40*1000);  // 40ms
+    return rc == 0;
+}
