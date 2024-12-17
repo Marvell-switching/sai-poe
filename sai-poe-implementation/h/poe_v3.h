@@ -187,9 +187,9 @@ typedef uint8_t POE_V3_PORT_STATUS;
 #define POE_V3_PORT_STATUS_OFF_OVER_TEMP_CNS 22
 #define POE_V3_PORT_STATUS_OFF_DEVICE_HOT_CNS 23
 #define POE_V3_PORT_STATUS_OFF_CLASS_ERROR_CNS 24
-#define POE_V3_PORT_STATUS_OFF_RLOW_DETECT_CNS 25
+#define POE_V3_PORT_STATUS_OFF_R_LOW_DETECT_CNS 25
 #define POE_V3_PORT_STATUS_OFF_POWER_ON_VERIFICATION_FAULT_CNS 26
-#define POE_V3_PORT_STATUS_ON_NON_STD_BTDEVICE_CNS 27
+#define POE_V3_PORT_STATUS_ON_NON_STD_BT_DEVICE_CNS 27
 #define POE_V3_PORT_STATUS_OFF_UNREACHABLE_CNS 28
 #define POE_V3_PORT_STATUS_ALT_B_SINGLE_SIGNATURE_CNS 255
 
@@ -289,6 +289,7 @@ typedef enum {
 
 typedef uint8_t POE_V3_DEV_HW_VERSION;
 #define POE_V3_DEV_HW_VERSION_LTC4291_CNS 0x38 /* 802.3 BT: LTC4291 */
+#define POE_V3_DEV_HW_VERSION_PD77728_CNS 0xB /* 802.3 BT: LTC4291 */
 
 /**** Message parameters ****/
 #define EXT_DRV_IPC_MAX_MSG_SIZE_CNS 256
@@ -655,9 +656,9 @@ typedef struct POE_V3_MSG_PORT_POWER_CONSUM_INFO_STC {
 
 typedef struct POE_V3_MSG_PORT_STATUS_STC {
     uint8_t                          logicPortNum;
-    uint8_t                          reserved[3];
-    POE_V3_PORT_STATUS                              portStatusA;
-    POE_V3_PORT_STATUS                              portStatusB;
+    POE_V3_PORT_STATUS               portStatusA;
+    POE_V3_PORT_STATUS               portStatusB;
+    uint8_t                          reserved;
 } POE_V3_MSG_PORT_STATUS_STC;
 
 typedef struct POE_V3_MSG_PORT_COUNTERS_STC {
@@ -709,9 +710,6 @@ typedef struct POE_V3_MSG_PORT_BT_POWER_CONSUM_INFO_STC {
 /*** End of port level ***/
 
 /***************************/
-
-/*** cause messages id's ***/
-#define POE_V3_CAUSE_PORT_STATUS_CNS 0x80
 
 typedef struct POE_V3_MSG_CAUSE_PORT_STATUS_STC {    
     union{
@@ -816,7 +814,9 @@ POE_OP_RESULT_ENT poeDevGetTotalPower(int32_t poeDevNum, int32_t *totalPowerMwPt
 POE_OP_RESULT_ENT poeDevGetPowerConsumption(int32_t poeDevNum, int32_t *powerConsumptionMwPtr);
 POE_OP_RESULT_ENT poeDevGetVersion(int32_t poeDevNum, char *versionPtr);
 POE_OP_RESULT_ENT poeDevGetPowerLimitMode(uint32_t poeDevNum, uint32_t *powerLimitPtr);
-POE_OP_RESULT_ENT poeDevSetPowerLimitMode(uint32_t poeDevNum, uint32_t powerLimitPtr);
+POE_OP_RESULT_ENT poeDevSetPowerLimitMode(uint32_t poeDevNum, uint32_t powerLimit);
+POE_OP_RESULT_ENT poeDevGetPortList (int32_t poeDevNum, uint32_t  *countPtr,uint64_t *portListPtr);
+POE_OP_RESULT_ENT poeDevGetPseList (int32_t poeDevNum, uint32_t  *countPtr,uint64_t *pseListPtr);
 POE_OP_RESULT_ENT poePseGetSoftwareVersion(int32_t poePseNum, char *versionPtr);
 POE_OP_RESULT_ENT poePseGetHardwareVersion(int32_t poePseNum, char *versionPtr);
 POE_OP_RESULT_ENT poePseGetTemperature(int32_t poePseNum, int16_t *temperaturePtr);
@@ -829,6 +829,8 @@ POE_OP_RESULT_ENT poePortGetPowerLimit(uint32_t frontPanelIndex, uint32_t *power
 POE_OP_RESULT_ENT poePortSetPowerPriority(uint32_t frontPanelIndex, const uint32_t powerPriority);
 POE_OP_RESULT_ENT poePortGetPowerConsumption(uint32_t frontPanelIndex, sai_poe_port_power_consumption_t *powerConsumptionPtr);
 POE_OP_RESULT_ENT poePortGetStatus (uint32_t frontPanelIndex, uint32_t *statusPtr);
+POE_OP_RESULT_ENT poePortGetPowerPriority (uint32_t frontPanelIndex, uint32_t *powerPriority);
+
 uint16_t swap16(uint16_t value);
 uint32_t swap32(uint32_t value);
 uint32_t getNumOfPse();

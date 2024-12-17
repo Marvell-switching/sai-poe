@@ -78,7 +78,7 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
         
         firmwareFile = fopen(filepath, "rb");
         if (!firmwareFile) {
-            perror("Error opening firmware file");
+            LOG_ERROR("Error opening firmware file");
             return EXTHWG_POE_ret_failed_CNS;
         }
 
@@ -90,7 +90,7 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
         /* Allocate buffer to hold the firmware */
         buffer = (char*)malloc(firmwareSize);
         if (!buffer) {
-            perror("Error allocating memory");
+            LOG_ERROR("Error allocating memory");
             fclose(firmwareFile);
             return EXTHWG_POE_ret_failed_CNS;
         }
@@ -98,7 +98,7 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
         /* Read the firmware file into the buffer */
         size_t bytesRead = fread(buffer, 1, firmwareSize, firmwareFile);
         if (bytesRead != firmwareSize) {
-            perror("Error reading firmware file");
+            LOG_ERROR("Error reading firmware file");
             free(buffer);
             fclose(firmwareFile);
             return EXTHWG_POE_ret_failed_CNS;
@@ -113,6 +113,7 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
             rc = ipc_poe_init(core, buffer, firmwareSize);
             
             if (rc != 0){
+                LOG_ERROR("Failed to initialize IPC\n");
                 return EXTHWG_POE_ret_failed_CNS;
             }
 

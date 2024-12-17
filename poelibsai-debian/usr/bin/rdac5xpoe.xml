@@ -201,67 +201,67 @@
       <saiplt:POE-power-banks>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">0</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">1</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">2</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">3</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">4</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">5</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">6</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">7</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">8</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">9</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">10</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">11</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">12</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">13</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">14</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
         <saiplt:PoEbank-list>
           <saiplt:bank-number saiplt:type="bank-number-type">15</saiplt:bank-number>
-          <saiplt:bank-watts saiplt:type="bank-watts-type">2000</saiplt:bank-watts>
+          <saiplt:bank-watts saiplt:type="bank-watts-type">700</saiplt:bank-watts>
         </saiplt:PoEbank-list>
       </saiplt:POE-power-banks>
       <saiplt:PSElist>
