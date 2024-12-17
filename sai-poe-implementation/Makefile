@@ -1,5 +1,5 @@
 # Specify the compiler
-CC = aarch64-linux-gnu-gcc
+CCC ?= aarch64-linux-gnu-gcc
 
 # Compiler flags
 CFLAGS = -g -O0 -I. -I./PDLIB -I./h -I./PDLIB/h/ -I./SAI -I./SAI/inc -I./SAI/experimental -I./SAI/meta -fPIC
@@ -30,12 +30,12 @@ all: $(TARGET)
 
 # Rule to build the shared library
 $(TARGET): $(OBJS)
-	$(CC) $^ $(LDFLAGS) -o $@
+	$(CCC) $^ $(LDFLAGS) -o $@
 
 # Rule to compile each source file into an object file
 $(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CCC) $(CFLAGS) -c $< -o $@
 
 # Create the object directory if it doesn't exist
 $(OBJ_DIR):
