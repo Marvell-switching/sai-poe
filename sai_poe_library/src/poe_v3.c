@@ -54,7 +54,7 @@ static void pdLibDebugCallback(const char *funcNamePtr,
     char        log[1024];
     int         len;
 
-    snprintf(log, sizeof(len), "pdlib debug: [%s]", funcNamePtr);
+    snprintf(log, sizeof(log), "pdlib debug: [%s]", funcNamePtr);
     len = strlen(log);
     vsnprintf(&log[len], sizeof(log) - len, format, argptr);
 }
@@ -1257,7 +1257,7 @@ POE_OP_RESULT_ENT poePseGetTemperature (
 
     rwlock_excl_acquire(&poe_v3_lock); 
 
-    memcpy(temperatureParams.pseTempSwap, 0, sizeof(temperatureParams.pseTempSwap));
+    memset(temperatureParams.pseTempSwap, 0, sizeof(temperatureParams.pseTempSwap));
 
     poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_PSE_TEMPERATURE_CNS, sizeof(temperatureParams), (uint8_t*)&temperatureParams);
 
