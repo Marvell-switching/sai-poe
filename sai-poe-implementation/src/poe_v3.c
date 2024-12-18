@@ -805,10 +805,11 @@ bool poePortGetSecondPhysicalIndex(uint32_t frontPanelIndex, uint32_t *physicalI
  *    error code is returned.
  */
 POE_OP_RESULT_ENT poePortMatrixInitialize() {
-    uint32_t                          physicalNumberA, physicalNumberB, frontPanelIndex, index = 0;
-    POE_PORT_HW_TYPE_ENT               poePortHwType;
-    POE_V3_MSG_SYS_PORT_MATRIX_STC setMatrixParams;
-    bool getNext = true;
+    uint32_t                            physicalNumberA, physicalNumberB, frontPanelIndex, index = 0;
+    POE_PORT_HW_TYPE_ENT                poePortHwType;
+    POE_V3_MSG_SYS_PORT_MATRIX_STC      setMatrixParams;
+    POE_OP_RESULT_ENT                   result = POE_OP_FAILED_E;
+    bool                                getNext = true;
 
     /* clean matrix params */
     memset(&setMatrixParams, 0xff, sizeof(POE_V3_MSG_SYS_PORT_MATRIX_STC));
@@ -828,10 +829,10 @@ POE_OP_RESULT_ENT poePortMatrixInitialize() {
             return POE_OP_FAILED_E;
         }
 
-         if(!poePortGetPhysicalIndex(frontPanelIndex, &physicalNumberA)) {
+        if(!poePortGetPhysicalIndex(frontPanelIndex, &physicalNumberA)) {
             LOG_ERROR("failed to get physical index");
             return POE_OP_FAILED_E;
-         }
+        }
 
         setMatrixParams.physicLogicalPair[index].logicalPort = (uint8_t)frontPanelIndex;
         setMatrixParams.physicLogicalPair[index++].physPort = (uint8_t)physicalNumberA;
@@ -851,16 +852,15 @@ POE_OP_RESULT_ENT poePortMatrixInitialize() {
     }
     
     if (index) {
-        return poeV3SendReceiveMsg(
+        result = poeV3SendReceiveMsg(
             POE_V3_MSG_LEVEL_SYSTEM_CNS, 
             POE_V3_MSG_DIR_SET_CNS,
             POE_V3_SYS_MSG_PORT_MATRIX_CNS,
             sizeof(setMatrixParams),
             (uint8_t*)&setMatrixParams);
-    } 
+    }
 
-    LOG_ERROR("failed to get entries");
-    return POE_OP_FAILED_E;
+    return result;
 }
 
 /**
@@ -1012,7 +1012,6 @@ POE_OP_RESULT_ENT poeDevGetPseList (
     uint64_t *pseListPtr
 )
 {
-    POE_V3_MSG_SYS_POWER_CONSUMPTION_STC powerConsumptionParams;
     POE_OP_RESULT_ENT result = POE_OP_OK_E;
     uint32_t index = 0;
 
@@ -1056,7 +1055,6 @@ POE_OP_RESULT_ENT poeDevGetPortList (
 {
     LOG_PRINT("poeDevGetPortList");
 
-    POE_V3_MSG_SYS_POWER_CONSUMPTION_STC powerConsumptionParams;
     POE_OP_RESULT_ENT result = POE_OP_OK_E; 
     uint32_t index = 0;
 

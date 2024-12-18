@@ -12,8 +12,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Copy libsai.so into the specified directory
+# Copy libsai.so into the debian directory
 cp libsai.so /local/store/sai-poe/poelibsai-debian/usr/lib/
+
+#Create md5 for board specific files
+cd  ./board_info
+md5sum rdac5xpoe.xml > rdac5xpoe.md5
+
+# Copy board specific files into the debian directory
+cp rdac5xpoe* ./../../poelibsai-debian/usr/bin/
 
 # Check if the copy was successful before proceeding
 if [ $? -ne 0 ]; then

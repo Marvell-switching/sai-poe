@@ -591,7 +591,6 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
     /* switch case placeholder, may change to function pointers */
     rwlock_excl_acquire(&sai_poe_lock); 
     internal_pse_id_ptr = (uint32_t*)dict_get(poe_object_pse_mapping_ptr, poe_pse_id);
-    pse_id = *internal_pse_id_ptr;
 
     /* TEMPORARY WORKAROUND */
     /* If SONiC calls get/set attribute before creating it then check if the object is in the correct format */
@@ -608,6 +607,9 @@ static sai_status_t get_poe_pse_attribute(_In_ sai_object_id_t     poe_pse_id,
             rwlock_excl_release(&sai_poe_lock);
             return SAI_STATUS_FAILURE;
         }
+    }
+    else {
+        pse_id = *internal_pse_id_ptr;
     }
 
     rwlock_excl_release(&sai_poe_lock);
@@ -725,7 +727,6 @@ static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In
     /* switch case placeholder, may change to function pointers */
     rwlock_excl_acquire(&sai_poe_lock);
     internal_port_id_ptr = (uint32_t*)dict_get(poe_object_port_mapping_ptr, poe_port_id);
-    port_id = *internal_port_id_ptr;
 
     /* TEMPORARY WORKAROUND */
     /* If SONiC calls get/set attribute before creating it then check if the object is in the correct format */
@@ -742,6 +743,9 @@ static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In
             rwlock_excl_release(&sai_poe_lock);
             return SAI_STATUS_FAILURE;
         }
+    }
+    else {
+        port_id = *internal_port_id_ptr;
     }
 
     rwlock_excl_release(&sai_poe_lock);
@@ -787,7 +791,6 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
     /* switch case placeholder, may change to function pointers */
     rwlock_excl_acquire(&sai_poe_lock);
     internal_port_id_ptr = (uint32_t*)dict_get(poe_object_port_mapping_ptr, poe_port_id);
-    port_id = *internal_port_id_ptr;
 
     /* TEMPORARY WORKAROUND */
     /* If SONiC calls get/set attribute before creating it then check if the object is in the correct format */
@@ -796,8 +799,6 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
         LOG_ERROR("port entry does not exist in internal mapping");
 
         poe_object_id_t poe_object_id = SAI_TO_POE_OBJECT(poe_port_id);
-        // poe_object_id.id = poe_port_id & 0xFFFFFFFF;
-        // poe_object_id.object_type = (sai_object_type_t)(poe_port_id >> 32);
 
         if(poe_object_id.object_type == SAI_OBJECT_TYPE_POE_PORT) {
             port_id = poe_object_id.id;
@@ -806,6 +807,9 @@ static sai_status_t get_poe_port_attribute(_In_ sai_object_id_t     poe_port_id,
             rwlock_excl_release(&sai_poe_lock);
             return SAI_STATUS_FAILURE;
         }
+    }
+    else {
+        port_id = *internal_port_id_ptr;
     }
 
     rwlock_excl_release(&sai_poe_lock);
@@ -1044,6 +1048,11 @@ sai_object_type_t sai_object_type_query(
         default:
             LOG_PRINT("non poe sai object");
             type = (sai_object_type_t)(object_id & 0xFFFFFFFF);
+    }
+
+    if((type <= SAI_OBJECT_TYPE_NULL) || (type >= SAI_OBJECT_TYPE_MAX)) {
+        LOG_ERROR("invalid, non-poe object type received");
+        return SAI_OBJECT_TYPE_POE_PORT; /* workaround */
     }
 
     LOG_PRINT("sai_object_type_query (type: %d, id: %d)", type, poe_object_id.id);
