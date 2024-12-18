@@ -217,30 +217,6 @@ bool extDrvIpcCm3FwDownload
     uint32_t      size
 );
 
-/**
-* @internal extDrvIpc15ByteMsgWrite function
-* @endinternal
-*
-* @brief   CM3 IPc "15 Bytes" message write
-*
-* @param[in] msg_PTR          - pointer to message buffer
-*/
-bool extDrvIpc15ByteMsgWrite(
-    void *msg_PTR
-);
-
-/**
-* @internal extDrvIpc15BytesMsgRead function
-* @endinternal
-*
-* @brief   CM3 IPc "15 Bytes" message read
-*
-* @param[in] msg_PTR          - pointer to message buffer
-*/
-bool extDrvIpc15BytesMsgRead(
-    void *msg_PTR
-);
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
