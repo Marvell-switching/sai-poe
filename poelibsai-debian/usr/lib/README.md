@@ -1,5 +1,6 @@
 # libsai.so 
-Is a shared library for the SAI (Switch Abstraction Interface) API, providing an implementation that enables interaction with switch hardware using standard interfaces.
+Shared library for the SAI (Switch Abstraction Interface) API, providing an implementation that enables interaction with switch hardware using standard interfaces.
+Using SAI v1.14. Located here: sai-poe-implementation/SAI
 
 # libapp_scpu
 Vendor specific library for communication between SAI and the hardware.
