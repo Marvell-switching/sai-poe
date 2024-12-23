@@ -493,7 +493,7 @@ static POE_OP_RESULT_ENT poeInitFw ()
             break;
         }
 
-        driver_ret_val = exthwgPoeIpcInit(exhw_mcuType, boardInfoDbPtr->data_PTR->poe.fwFileName);
+        driver_ret_val = exthwgPoeIpcInit(exhw_mcuType, boardInfoDbPtr->data_PTR->poe.fwFileName, boardInfoDbPtr->data_PTR->poe.cpuType);
         
     }
     else if (boardInfoDbPtr->data_PTR->poe.hostSerialChannelId == PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E){

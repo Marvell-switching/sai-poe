@@ -35,7 +35,8 @@
         PDL_ENUM_ID_POE_MCU_TYPE_E,
         PDL_ENUM_ID_POE_VENDOR_TYPE_E,
         PDL_ENUM_ID_POE_COMMUNICATION_TYPE_E,
-        PDL_ENUM_ID_POE_HOST_SERIAL_CHANNEL_ID_E
+        PDL_ENUM_ID_POE_HOST_SERIAL_CHANNEL_ID_E,
+        PDL_ENUM_ID_CPU_TYPE_E
     } PDL_ENUM_IDS_ENT;
     /* typedef end */
     /* typedef start */
@@ -117,6 +118,16 @@
     } PDL_POE_COMMUNICATION_TYPE_ENT;
     /* PDL_ENUM_ID_POE_COMMUNICATION_TYPE_E */
 
+    typedef enum 
+    {
+        PDL_POE_HOST_SERIAL_CHANNEL_ID_UART_E = 0,
+        PDL_POE_HOST_SERIAL_CHANNEL_ID_I2C_E = 1,
+        PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E = 2,
+        PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E = 3,
+        PDL_POE_HOST_SERIAL_CHANNEL_ID_LAST_E = 4    
+    } PDL_POE_HOST_SERIAL_CHANNEL_ID_ENT;
+    /* PDL_ENUM_ID_POE_HOST_SERIAL_CHANNEL_ID_E */
+
     /* packed typedef start */
     PDL_PRAGMA_NOALIGN
     typedef PDL_PACKED_STRUCT_START struct
@@ -135,13 +146,11 @@
 
     typedef enum 
     {
-        PDL_POE_HOST_SERIAL_CHANNEL_ID_UART_E = 0,
-        PDL_POE_HOST_SERIAL_CHANNEL_ID_I2C_E = 1,
-        PDL_POE_HOST_SERIAL_CHANNEL_ID_DRAGONITE_SHARED_MEMORY_E = 2,
-        PDL_POE_HOST_SERIAL_CHANNEL_ID_IPC_SHARED_MEMORY_E = 3,
-        PDL_POE_HOST_SERIAL_CHANNEL_ID_LAST_E = 4    
-    } PDL_POE_HOST_SERIAL_CHANNEL_ID_ENT;
-    /* PDL_ENUM_ID_POE_HOST_SERIAL_CHANNEL_ID_E */
+        PDL_CPU_TYPE_INTERNAL_E = 0,
+        PDL_CPU_TYPE_EXTERNAL_E = 1,
+        PDL_CPU_TYPE_LAST_E = 2    
+    } PDL_CPU_TYPE_ENT;
+    /* PDL_ENUM_ID_CPU_TYPE_E */
 
     /* packed typedef start */
     PDL_PRAGMA_NOALIGN
@@ -203,10 +212,12 @@
          UINT_8 fwFileName_mask;
          PDL_PSEPORTS_PARAMS_STC pseports;
          UINT_8 pseports_mask;
-         PDL_POE_HOST_SERIAL_CHANNEL_ID_ENT hostSerialChannelId;
-         UINT_8 hostSerialChannelId_mask;
+         PDL_CPU_TYPE_ENT cpuType;
+         UINT_8 cpuType_mask;
          PDL_POE_POWER_BANKS_PARAMS_STC poePowerBanks;
          UINT_8 poePowerBanks_mask;
+         PDL_POE_HOST_SERIAL_CHANNEL_ID_ENT hostSerialChannelId;
+         UINT_8 hostSerialChannelId_mask;
          PDL_POE_COMMUNICATION_TYPE_ENT poeCommunicationTypeValue;
          UINT_8 poeCommunicationTypeValue_mask;
          char * pseFwFileName;
