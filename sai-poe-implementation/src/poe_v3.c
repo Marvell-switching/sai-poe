@@ -1115,6 +1115,7 @@ POE_OP_RESULT_ENT poeDevGetPowerConsumption (
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_SYSTEM_CNS, POE_V3_MSG_DIR_GET_CNS, POE_V3_SYS_MSG_POWER_CONSUMPTION_CNS, sizeof(powerConsumptionParams), (UINT_8*)&powerConsumptionParams);
     if(result == POE_OP_OK_E) {
         *powerConsumptionMwPtr = (swap32(powerConsumptionParams.powerConsumptionSwap)) + 0.5;
+        LOG_PRINT("total power consumption %d", *powerConsumptionMwPtr);
     }
     else {
         LOG_ERROR("failed to get data");
@@ -1578,6 +1579,8 @@ POE_OP_RESULT_ENT poePortSetPowerLimit (
         LOG_ERROR("failed to set data");
     }
 
+    LOG_PRINT("power limit %d, port %d", powerLimit, frontPanelIndex);
+
     rwlock_excl_release(&poe_v3_lock);
 
     return result;
@@ -1639,6 +1642,8 @@ POE_OP_RESULT_ENT poePortSetPowerPriority (
 
     portPriorityParams.logicPortNum = (UINT_8)frontPanelIndex;
     portPriorityParams.portPriority = powerPriority;
+
+    LOG_PRINT("power priority %d, port %d", powerPriority, frontPanelIndex);
 
     result = poeV3SendReceiveMsg(POE_V3_MSG_LEVEL_PORT_CNS, POE_V3_MSG_DIR_SET_CNS, POE_V3_PORT_MSG_PORT_PRIORITY_CNS, sizeof(portPriorityParams), (uint8_t*)&portPriorityParams);
 
