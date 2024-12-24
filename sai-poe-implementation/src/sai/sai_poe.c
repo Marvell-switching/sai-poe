@@ -756,9 +756,11 @@ static sai_status_t set_poe_port_attribute(_In_ sai_object_id_t poe_port_id, _In
         result = poePortSetAdminEnable(port_id, attr->value.booldata);
         break;
     case SAI_POE_PORT_ATTR_POWER_LIMIT:
-        result = poeDevSetPowerLimitMode(port_id, attr->value.u32);
+        LOG_PRINT("port %d, set power limit %d", port_id, attr->value.u32);
+        result = poePortSetPowerLimit(port_id, attr->value.u32);
         break;
     case SAI_POE_PORT_ATTR_POWER_PRIORITY:
+        LOG_PRINT("port %d, set power priority %d", port_id, attr->value.s32);
         result = poePortSetPowerPriority(port_id, attr->value.s32);
         break;
     default:
