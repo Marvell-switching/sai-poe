@@ -65,7 +65,7 @@ extern uint32_t exthwgPoeIpcReinit (
  * @return EXTHWG_POE_ret_TYP Returns the initialization status.
  */
 extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
-    ExthwgPoeIpcMcuTypeEnt mcuType, char* filepath)
+    ExthwgPoeIpcMcuTypeEnt mcuType, char* filepath, uint32_t cpu_type)
 {
     uint32_t rc, core = 2;
     EXTHWG_POE_ret_TYP ret = EXTHWG_POE_ret_ok_CNS;
@@ -110,7 +110,7 @@ extern EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
         }
         else if (mcuType == ExthwgPoeIpcMcuTypeCm3) { /* CM3 */
             /* initialize shared memory and load firmware */
-            rc = ipc_poe_init(core, buffer, firmwareSize);
+            rc = ipc_poe_init(core, buffer, firmwareSize, cpu_type);
             
             if (rc != 0){
                 LOG_ERROR("Failed to initialize IPC\n");

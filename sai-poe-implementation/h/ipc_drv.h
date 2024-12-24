@@ -91,9 +91,10 @@ extern void exthwgPoeIpcRemoveFwFlagLoaded(void);
  */
 EXTHWG_POE_ret_TYP exthwgPoeIpcInit(
     ExthwgPoeIpcMcuTypeEnt mcuType,
-    char* filepath
+    char* filepath,
+    uint32_t cpu_type
 );
 
-extern int ipc_poe_init(uint32_t service_cpu_num /*core*/, char *buf, unsigned buf_size);
+extern int ipc_poe_init(uint32_t service_cpu_num /*core*/, char *buf, unsigned buf_size, uint32_t cpu_type);
 
 extern int ipc_poe_send_receive_message(uint32_t opcode32, uint32_t len, uint8_t* data_ptr, uint32_t *response_len);
